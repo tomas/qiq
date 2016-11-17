@@ -108,6 +108,17 @@ function assertProperty(prop) {
 }
 
 /**
+ * Assert that `prop` is undefined.
+ *
+ * @param {String} prop
+ * @api private
+ */
+
+function assertUndefined(prop) {
+  if (typeof prop != 'undefined') throw new Error('clash of names for conditional "' + prop + '"');
+}
+
+/**
  * Parse `str`.
  *
  * @param {String} str
