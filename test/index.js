@@ -34,6 +34,11 @@ describe('{{id}}', function(){
     mm('hi {{name.first}} {{name.last}}.', user).should.equal('hi tobi ferret.');
   })
 
+  it('should support bracket props', function(){
+    var user = { name: { first: 'tobi', 1: 'ferret' }};
+    mm('hi {{name["first"]}} {{name[1]}}.', user).should.equal('hi tobi ferret.');
+  })
+
   it('should escape newlines', function(){
     var user = { name: 'tobi' };
     mm('hi,\nhow are you {{name}}?', user).should.equal('hi,\nhow are you tobi?');
