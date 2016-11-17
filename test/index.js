@@ -24,6 +24,11 @@ describe('{{id}}', function(){
     mm('hi {{name}}.', user).should.equal('hi &lt;script&gt;.');
   })
 
+  it('allows spaces in tags', function(){
+    var user = { name: 'test' };
+    mm('hi {{ name }}.', user).should.equal('hi test.');
+  })
+
   it('should support nested props', function(){
     var user = { name: { first: 'tobi', last: 'ferret' }};
     mm('hi {{name.first}} {{name.last}}.', user).should.equal('hi tobi ferret.');

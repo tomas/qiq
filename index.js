@@ -128,7 +128,7 @@ function assertUndefined(prop) {
  */
 
 function parse(str) {
-  return str.split(/\{\{|\}\}/);
+  return str.split(/\{\{ ?| ?\}\}/);
 }
 
 /**
