@@ -154,6 +154,12 @@ describe('{{^id}}', function(){
      .should.equal('fails? nope');
   })
 
+  it('should honor ifelse with "else" keyword too', function(){
+    var data = { fails: false };
+    mm('fails? {{#fails}}yep{{_else}}nope{{/fails}}', data)
+     .should.equal('fails? nope');
+  })
+
   it('should honor ifelse (inverted)', function(){
     var data = { works: true };
     mm('fails? {{^works}}yep{{_works}}nope{{/works}}', data)
@@ -165,7 +171,6 @@ describe('{{^id}}', function(){
     mm('fails? {{^works}}yep{{_}}nope{{/}}', data)
      .should.equal('fails? nope');
   })
-
 
   it('should supported nested ifelses', function(){
     var data = { fails: false, hot: false };

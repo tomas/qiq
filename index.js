@@ -78,12 +78,10 @@ function compile(str, escapeNewLines) {
           js.push(' + obj.' + tok + ' + ');
           break;
         case '_':
-          // if (tok.slice(1) == 'else') {
           tok = tok.slice(1);
-          if (tok == '') tok = levels[levels.length-1];
+          if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
           js.push(' }) + section(obj, "' + tok + '", ' + conds[tok] + ', function(obj){ return ');
           break;
-          // }
           default:
             assertProperty(tok);
             js.push(' + escape(obj.' + tok + ') + ');
