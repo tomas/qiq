@@ -68,7 +68,7 @@ function compile(str, escapeNewLines) {
           tok = tok.slice(1);
           levels.push(tok)
           assertProperty(tok);
-          assertUndefined(conds[tok]);
+          assertUndefined(tok, conds[tok]);
           conds[tok] = true;
           js.push(' + section(obj, "' + tok + '", false, function(obj){ return ');
           break;
@@ -108,7 +108,7 @@ function compile(str, escapeNewLines) {
  */
 
 function assertProperty(prop) {
-  if (!prop.match(/^[\w.\[\]\"\']+$/)) throw new Error('invalid property "' + prop + '"');
+  if (!prop.match(/^[\w.\[\]\"\\']+$/)) throw new Error('invalid property "' + prop + '"');
 }
 
 /**
@@ -118,8 +118,8 @@ function assertProperty(prop) {
  * @api private
  */
 
-function assertUndefined(prop) {
-  if (typeof prop != 'undefined') throw new Error('clash of names for conditional "' + prop + '"');
+function assertUndefined(prop, value) {
+  if (typeof value != 'undefined') throw new Error('trying to overwrite existing conditional for "' + prop + '"');
 }
 
 /**
