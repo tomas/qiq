@@ -86,6 +86,12 @@ describe('{{#id}}', function(){
     mm('{{#admin}}{{#authenticated}}yup{{/}}{{/}}', user).should.equal('yup');
   })
 
+  it('should work with regular HTML', function(){
+    var user = { admin: true, authenticated: true };
+    mm('<div class="login">\n{{#authenticated}}\nlogged in!\n{{/}}\n</div>', user).should.equal('<div class="login">\n\nlogged in!\n\n</div>');
+  })
+
+
   it('should support lambdas', function(){
     var obj = {
       md: function(str){

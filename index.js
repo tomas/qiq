@@ -20,9 +20,9 @@ exports.compile = compile;
  * @api public
  */
 
-function render(str, obj) {
+function render(str, obj, escapeNewLines) {
   obj = obj || {};
-  var fn = compile(str);
+  var fn = compile(str, escapeNewLines);
   return fn(obj);
 }
 
@@ -34,17 +34,18 @@ function render(str, obj) {
  * @api public
  */
 
-function compile(str) {
+function compile(str, escapeNewLines) {
   var js = [];
   var toks = parse(str);
   var tok;
   var conds  = {};
   var levels = [];
+  var lineEnd = escapeNewLines ? '\\\\\\n' : '\\n';
 
   for (var i = 0; i < toks.length; ++i) {
     tok = toks[i];
     if (i % 2 == 0) {
-      js.push('"' + tok.replace(/"/g, '\\"') + '"');
+      js.push('"' + tok.replace(/"/g, '\\\"') + '"');
     } else {
       switch (tok[0]) {
         case '/':
@@ -92,7 +93,8 @@ function compile(str) {
     js = '\n'
       + indent(escape.toString()) + ';\n\n'
       + indent(section.toString()) + ';\n\n'
-      + '  return ' + js.join('').replace(/\n/g, '\\n');
+      + '  return ' + js.join('').replace(/\n/g, lineEnd);
+
 
     return new Function('obj', js);
   }
