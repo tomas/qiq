@@ -38,6 +38,8 @@ function compile(str) {
   var js = [];
   var toks = parse(str);
   var tok;
+  var conds  = {};
+  var levels = [];
 
   for (var i = 0; i < toks.length; ++i) {
     tok = toks[i];
@@ -47,16 +49,25 @@ function compile(str) {
       switch (tok[0]) {
         case '/':
           tok = tok.slice(1);
-          js.push(' }) + ');
+          if (levels[levels.length-1] == tok) {
+            js.push(' }) + ');
+            levels.pop();
+          }
           break;
         case '^':
           tok = tok.slice(1);
+          levels.push(tok);
           assertProperty(tok);
+          assertUndefined(conds[tok]);
+          conds[tok] = true;
           js.push(' + section(obj, "' + tok + '", true, function(obj){ return ');
           break;
         case '#':
           tok = tok.slice(1);
+          levels.push(tok)
           assertProperty(tok);
+          assertUndefined(conds[tok]);
+          conds[tok] = false;
           js.push(' + section(obj, "' + tok + '", false, function(obj){ return ');
           break;
         case '!':
@@ -64,20 +75,26 @@ function compile(str) {
           assertProperty(tok);
           js.push(' + obj.' + tok + ' + ');
           break;
-        default:
-          assertProperty(tok);
-          js.push(' + escape(obj.' + tok + ') + ');
+        case '_':
+          // if (tok.slice(1) == 'else') {
+          tok = tok.slice(1);
+          js.push(' }) + section(obj, ' + !conds[tok] + ', true, function(obj){ return ');
+          break;
+          // }
+          default:
+            assertProperty(tok);
+            js.push(' + escape(obj.' + tok + ') + ');
+        }
       }
     }
+
+    js = '\n'
+      + indent(escape.toString()) + ';\n\n'
+      + indent(section.toString()) + ';\n\n'
+      + '  return ' + js.join('').replace(/\n/g, '\\n');
+
+    return new Function('obj', js);
   }
-
-  js = '\n'
-    + indent(escape.toString()) + ';\n\n'
-    + indent(section.toString()) + ';\n\n'
-    + '  return ' + js.join('').replace(/\n/g, '\\n');
-
-  return new Function('obj', js);
-}
 
 /**
  * Assert that `prop` is a valid property.
