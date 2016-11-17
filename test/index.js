@@ -48,6 +48,15 @@ describe('{{id}}', function(){
     mm('"hey"').should.equal('"hey"');
   })
 
+  it('should allow setting a different delimiter', function(){
+    var opts = { delimiter: /\[\[ ?| ?\]\]/ };
+    var data = { foo: '123', var: 234 }
+    mm('{{foo}} [[var]]', data, opts).should.equal('{{foo}} 234');
+
+    var opts = { delimiter: /\{\{ ?| ?\}\}/ };
+    mm('{{foo}} [[var]]', data, opts).should.equal('123 [[var]]');
+  })
+
   it('should only match words', function(done){
     try {
       mm('hi {{name)}}.');

@@ -20,9 +20,15 @@ exports.compile = compile;
  * @api public
  */
 
-function render(str, obj, escapeNewLines) {
-  obj = obj || {};
-  var fn = compile(str, escapeNewLines);
+var delimiter = /\{\{ ?| ?\}\}/;
+
+function render(str, obj, opts) {
+  obj  = obj  || {};
+  opts = opts || {};
+
+  if (opts.delimiter) delimiter = opts.delimiter;
+
+  var fn = compile(str, opts.escapeNewLines);
   return fn(obj);
 }
 
@@ -129,7 +135,7 @@ function assertUndefined(prop, value) {
  */
 
 function parse(str) {
-  return str.split(/\{\{ ?| ?\}\}/);
+  return str.split(delimiter);
 }
 
 /**
