@@ -36,7 +36,7 @@ Now you can do:
 ```
 ## API
 
-### minstache(string, [obj])
+### minstache(string, [obj], [opts])
 
   Compile and render the given mustache `string` with optional context `obj`.
 
@@ -48,16 +48,16 @@ Now you can do:
 
 ### Variables
 
-```html
+```js
   var minstache = require('minstache');
 
   var template  = 'Hi {{name}}!';
-  minstache(template, { name: 'Tommy' }); // => "Hi Bob!";
+  minstache(template, { name: 'Tommy' }); // => "Hi Tommy!";
 
   // nested objects also work
-  var template  = 'Hi {{name}}, how's your {{day.name}}?';
+  var template  = 'Hi {{name}}, how is your {{day.name}}?';
   var data      = { name: 'Tommy', day: { name: 'Tuesday' } };
-  minstache(template, data); // => "Hello Tommy, how's your Tuesday?";
+  minstache(template, data); // => "Hello Tommy, how is your Tuesday?";
 
   // you can also separate brackets and tokens with spaces, like:
   var template  = 'Hi {{ name }}, how are you?';
@@ -71,7 +71,7 @@ Now you can do:
 
 ### Conditionals
 
-```html
+```js
 
   // true
   var template  = 'Hello.{{#foo}} Goodbye.{{/foo}}';
@@ -100,7 +100,7 @@ Now you can do:
 
 ### Arrays
 
-```html
+```js
 
   var template = '<ul>{{#contacts}}<li>{{name}}</li>{{/contacts}}</ul>';
   var list = { 
