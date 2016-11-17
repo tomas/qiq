@@ -26,31 +26,14 @@ Hello {{name}}! {{^authenticated}}<a href="/login">login</a>{{/authenticated}}
 $ minstache < hello.mustache > hello.js
 ```
 
-  hello.js:
+Now you can do:
 
 ```js
-module.exports = function anonymous(obj) {
+  var hello = require('./hello');
+  var str = hello({ name: 'Tom', authenticated: false }); 
 
-  function escape(html) {
-    return String(html)
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  };
-
-  function section(obj, prop, negate, str) {
-    var val = obj[prop];
-    if ('function' == typeof val) return val.call(obj, str);
-    if (negate) val = !val;
-    if (val) return str;
-    return '';
-  };
-
-  return "Hello " + escape(obj.name) + "! " + section(obj, "authenticated", true, "<a href=\"/login\">login</a>") + "\n"
-}
+  console.log(str); // => "Hello Tom! <a href="/login">login</a>
 ```
-
 ## API
 
 ### minstache(string, [obj])
@@ -60,6 +43,72 @@ module.exports = function anonymous(obj) {
 ### minstache.compile(string)
 
   Compile the mustache `string` to a stand-alone `Function` accepting a context `obj`.
+
+## Syntax
+
+### Variables
+
+```html
+  var minstache = require('minstache');
+
+  var template  = 'Hi {{name}}!';
+  minstache(template, { name: 'Tommy' }); // => "Hi Bob!";
+
+  // nested objects also work
+  var template  = 'Hi {{name}}, how's your {{day.name}}?';
+  var data      = { name: 'Tommy', day: { name: 'Tuesday' } };
+  minstache(template, data); // => "Hello Tommy, how's your Tuesday?";
+
+  // you can also separate brackets and tokens with spaces, like:
+  var template  = 'Hi {{ name }}, how are you?';
+  minstache(template, { name: 'Jerry' }); // => "Hi Jerry, how are you?";
+
+  // and even use a different delimiter if you want to:
+  var template  = 'Howdy <% name %>!';
+  var opts      = { delimeter: /\<\% ?| ?\%\>/ };
+  minstache(template, { name: 'Jerry' }, opts); // => "Hi Jerry, how are you?";
+```
+
+### Conditionals
+
+```html
+
+  // true
+  var template  = 'Hello.{{#foo}} Goodbye.{{/foo}}';
+  minstache(template, { foo: true }); // => "Hello. Goodbye.";
+
+  // truthy
+  var template  = 'Goodbye.{{#number}} Hello.{{/number}}';
+  minstache(template, { number: 1 }); // => "Goodbye. Hello.";
+
+  // false 
+  var template  = 'This is {{^bar}}not{{/bar}}a test.';
+  minstache(template, { bar: false }); // => "This is not a test.";
+
+  // if/else
+  var template  = 'Very {{#good}}good{{_else}}bad{{/good}}.';
+  minstache(template, { good: true }); // => "Very good.";
+
+  // if/else reversed
+  var template  = 'Such {{^ugly}}nice{{_else}}ugly{{/wow}}!';
+  minstache(template, { ugly: false }); // => "Such nice!";
+
+  // nested if/else!
+  var template = 'Works? {{^works}}Nope.{{_else}}Yep, {{#awesome}}awesome{{_else}}cool{{/awesome}}!{{/works}}'
+  minstache(template, { works: true, awesome: false }); // => "Works? Yep, cool!";
+```
+
+### Arrays
+
+```html
+
+  var template = '<ul>{{#contacts}}<li>{{name}}</li>{{/contacts}}</ul>';
+  var list = { 
+    contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }] 
+  };
+  minstache(template, list); // => "<ul><li>tobi</li><li>loki</li><li>jane</li></ul>";
+
+```
 
 ## Divergence
 
