@@ -155,6 +155,13 @@ describe('{{^id}}', function(){
      .should.equal('fails? nope');
   })
 
+  it('ifelse works with single char', function(){
+    var data = { works: true };
+    mm('fails? {{^works}}yep{{_}}nope{{/}}', data)
+     .should.equal('fails? nope');
+  })
+
+
   it('should supported nested ifelses', function(){
     var data = { fails: false, hot: false };
     mm('fails? {{#fails}}yep{{_fails}}nope, {{#hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)

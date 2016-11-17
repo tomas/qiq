@@ -80,6 +80,7 @@ function compile(str, escapeNewLines) {
         case '_':
           // if (tok.slice(1) == 'else') {
           tok = tok.slice(1);
+          if (tok == '') tok = levels[levels.length-1];
           js.push(' }) + section(obj, "' + tok + '", ' + conds[tok] + ', function(obj){ return ');
           break;
           // }
