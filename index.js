@@ -49,9 +49,10 @@ function compile(str) {
       switch (tok[0]) {
         case '/':
           tok = tok.slice(1);
-          if (levels[levels.length-1] == tok) {
+          if (tok == '' || levels[levels.length-1] == tok) {
             js.push(' }) + ');
             levels.pop();
+            delete(conds[tok]);
           }
           break;
         case '^':
@@ -59,7 +60,7 @@ function compile(str) {
           levels.push(tok);
           assertProperty(tok);
           assertUndefined(conds[tok]);
-          conds[tok] = true;
+          conds[tok] = false;
           js.push(' + section(obj, "' + tok + '", true, function(obj){ return ');
           break;
         case '#':
@@ -67,7 +68,7 @@ function compile(str) {
           levels.push(tok)
           assertProperty(tok);
           assertUndefined(conds[tok]);
-          conds[tok] = false;
+          conds[tok] = true;
           js.push(' + section(obj, "' + tok + '", false, function(obj){ return ');
           break;
         case '!':
@@ -78,7 +79,7 @@ function compile(str) {
         case '_':
           // if (tok.slice(1) == 'else') {
           tok = tok.slice(1);
-          js.push(' }) + section(obj, ' + !conds[tok] + ', true, function(obj){ return ');
+          js.push(' }) + section(obj, "' + tok + '", ' + conds[tok] + ', function(obj){ return ');
           break;
           // }
           default:

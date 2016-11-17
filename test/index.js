@@ -4,6 +4,7 @@
  */
 
 var mm = require('..');
+var should = require('should');
 
 describe('{id}', function(){
   it('should not work', function(){
@@ -130,4 +131,29 @@ describe('{{^id}}', function(){
     mm('users exist: {{#users}}yep{{/users}}{{^users}}nope{{/users}}', users)
      .should.equal('users exist: yep');
   })
+
+  it('should honor ifelse', function(){
+    var data = { fails: false };
+    mm('fails? {{#fails}}yep{{_fails}}nope{{/fails}}', data)
+     .should.equal('fails? nope');
+  })
+
+  it('should honor ifelse (inverted)', function(){
+    var data = { works: true };
+    mm('fails? {{^works}}yep{{_works}}nope{{/works}}', data)
+     .should.equal('fails? nope');
+  })
+
+  it('should supported nested ifelses', function(){
+    var data = { fails: false, hot: false };
+    mm('fails? {{#fails}}yep{{_fails}}nope, {{#hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)
+     .should.equal('fails? nope, cool!');
+  })
+
+  it('should supported nested ifelses', function(){
+    var data = { fails: false, hot: true };
+    mm('fails? {{#fails}}yep{{_fails}}nope, {{^hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)
+     .should.equal('fails? nope, cool!');
+  })
+
 })
