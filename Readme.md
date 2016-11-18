@@ -66,7 +66,7 @@ Now you can do:
   // and even use a different delimiter if you want to:
   var template  = 'Howdy <% name %>!';
   var opts      = { delimeter: /\<\% ?| ?\%\>/ };
-  minstache(template, { name: 'Jerry' }, opts); // => "Hi Jerry, how are you?";
+  minstache(template, { name: 'Jerry' }, opts); // => "Howdy Jerry!";
 ```
 
 ### Conditionals
