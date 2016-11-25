@@ -59,6 +59,10 @@ Now you can do:
   var data      = { name: 'Tommy', day: { name: 'Tuesday' } };
   minstache(template, data); // => "Hello Tommy, how is your Tuesday?";
 
+  // to escape HTML, use a ! before your variable name
+  var template  = 'Good day {{!greeting}}';
+  minstache(template, { greeting: '<em>human</em>' }); // => "Good day <em>human</em>";
+
   // you can also separate brackets and tokens with spaces, like:
   var template  = 'Hi {{ name }}, how are you?';
   minstache(template, { name: 'Jerry' }); // => "Hi Jerry, how are you?";
@@ -89,7 +93,7 @@ Now you can do:
   minstache(template, { good: true }); // => "Very good.";
 
   // if/else reversed
-  var template  = 'Such {{^ugly}}nice{{_else}}ugly{{/wow}}!';
+  var template  = 'Such {{^ugly}}nice{{_else}}ugly{{/ugly}}!';
   minstache(template, { ugly: false }); // => "Such nice!";
 
   // nested if/else!
@@ -110,8 +114,6 @@ Now you can do:
 ## Divergence
 
   Partials are not supported, this lib is meant to be a small template engine solution for stand-alone [component](http://github.com/component) templates. If your template takes "partials" then pass other rendered strings to it. If you need a full-blown mustache solution Hogan.js is still great.
-
-  Minstache uses `{{!name}}` for unescaped properties.
 
 ## License
 
