@@ -72,7 +72,6 @@ Now you can do:
 ### Conditionals
 
 ```js
-
   // true
   var template  = 'Hello.{{#foo}} Goodbye.{{/foo}}';
   minstache(template, { foo: true }); // => "Hello. Goodbye.";
@@ -82,7 +81,7 @@ Now you can do:
   minstache(template, { number: 1 }); // => "Goodbye. Hello.";
 
   // false 
-  var template  = 'This is {{^bar}}not{{/bar}}a test.';
+  var template  = 'This is {{^bar}}not {{/bar}}a test.';
   minstache(template, { bar: false }); // => "This is not a test.";
 
   // if/else
@@ -101,13 +100,11 @@ Now you can do:
 ### Arrays
 
 ```js
-
   var template = '<ul>{{#contacts}}<li>{{name}}</li>{{/contacts}}</ul>';
   var list = { 
     contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }] 
   };
   minstache(template, list); // => "<ul><li>tobi</li><li>loki</li><li>jane</li></ul>";
-
 ```
 
 ## Divergence
