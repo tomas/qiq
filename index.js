@@ -1,201 +1,200 @@
-
 var Minstache = (function() {
 
-var templates = {};
-var delimiter = /\{\{ ?| ?\}\}/;
+  var templates = {};
+  var delimiter = /\{\{ ?| ?\}\}/;
 
-// returns a hashcode for a given string
-function hashCode(str) {
-  var hash = 0;
-  if (str.length == 0) return hash;
-  for (i = 0; i < str.length; i++) {
-    char = str.charCodeAt(i);
-    hash = ((hash<<5)-hash)+char;
-    hash = hash & hash; // Convert to 32bit integer
+  // returns a hashcode for a given string
+  function hashCode(str) {
+    var hash = 0;
+    if (str.length == 0) return hash;
+    for (i = 0; i < str.length; i++) {
+      char = str.charCodeAt(i);
+      hash = ((hash<<5)-hash)+char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
   }
-  return hash;
-}
 
-/**
- * Render the given mustache `str` with `obj`.
- *
- * @param {String} str
- * @param {Object} obj
- * @return {String}
- * @api public
- */
+  /**
+   * Render the given mustache `str` with `obj`.
+   *
+   * @param {String} str
+   * @param {Object} obj
+   * @return {String}
+   * @api public
+   */
 
-function render(str, obj, opts) {
-  obj  = obj  || {};
-  opts = opts || {};
-  var key  = opts.key || hashCode(str);
+  function render(str, obj, opts) {
+    obj  = obj  || {};
+    opts = opts || {};
+    var key  = opts.key || hashCode(str);
 
-  if (opts.delimiter) delimiter = opts.delimiter;
+    if (opts.delimiter) delimiter = opts.delimiter;
 
-  var fn = templates[key];
-  if (!fn) fn = templates[key] = compile(str, opts.escapeNewLines);
+    var fn = opts.skipCache ? null : templates[key];
+    if (!fn) fn = templates[key] = compile(str, opts.escapeNewLines);
 
-  return fn(obj);
-}
+    return fn(obj);
+  }
 
-/**
- * Compile the given `str` to a `Function`.
- *
- * @param {String} str
- * @return {Function}
- * @api public
- */
+  /**
+   * Compile the given `str` to a `Function`.
+   *
+   * @param {String} str
+   * @return {Function}
+   * @api public
+   */
 
-function compile(str, escapeNewLines) {
-  var js = [];
-  var toks = parse(str);
-  var tok;
-  var conds  = {};
-  var levels = [];
-  var lineEnd = escapeNewLines ? '\\\\\\n' : '\\n';
+  function compile(str, escapeNewLines) {
+    var js = [];
+    var toks = parse(str);
+    var tok;
+    var conds  = {};
+    var levels = [];
+    var lineEnd = escapeNewLines ? '\\\\\\n' : '\\n';
 
-  for (var i = 0; i < toks.length; ++i) {
-    tok = toks[i];
-    if (i % 2 == 0) {
-      js.push('"' + tok.replace(/"/g, '\\\"') + '"');
-    } else {
-      switch (tok[0]) {
-        case '/':
-          tok = tok.slice(1);
-          if (tok == '' || levels[levels.length-1] == tok) {
-            js.push(' }) + ');
-            levels.pop();
-            delete(conds[tok]);
-          }
-          break;
-        case '^':
-          tok = tok.slice(1);
-          levels.push(tok);
-          assertProperty(tok);
-          assertUndefined(conds[tok]);
-          conds[tok] = false;
-          js.push(' + section(obj, "' + tok + '", true, function(obj){ return ');
-          break;
-        case '#':
-          tok = tok.slice(1);
-          levels.push(tok)
-          assertProperty(tok);
-          assertUndefined(tok, conds[tok]);
-          conds[tok] = true;
-          js.push(' + section(obj, "' + tok + '", false, function(obj){ return ');
-          break;
-        case '!':
-          tok = tok.slice(1);
-          assertProperty(tok);
-          js.push(' + obj.' + tok + ' + ');
-          break;
-        case '_':
-          tok = tok.slice(1);
-          if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
-          js.push(' }) + section(obj, "' + tok + '", ' + conds[tok] + ', function(obj){ return ');
-          break;
-          default:
+    for (var i = 0; i < toks.length; ++i) {
+      tok = toks[i];
+      if (i % 2 == 0) {
+        js.push('"' + tok.replace(/"/g, '\\\"') + '"');
+      } else {
+        switch (tok[0]) {
+          case '/':
+            tok = tok.slice(1);
+            if (tok == '' || levels[levels.length-1] == tok) {
+              js.push(' }) + ');
+              levels.pop();
+              delete(conds[tok]);
+            }
+            break;
+          case '^':
+            tok = tok.slice(1);
+            levels.push(tok);
             assertProperty(tok);
-            js.push(' + escape(obj.' + tok + ') + ');
+            assertUndefined(conds[tok]);
+            conds[tok] = false;
+            js.push(' + section(obj, "' + tok + '", true, function(obj){ return ');
+            break;
+          case '#':
+            tok = tok.slice(1);
+            levels.push(tok)
+            assertProperty(tok);
+            assertUndefined(tok, conds[tok]);
+            conds[tok] = true;
+            js.push(' + section(obj, "' + tok + '", false, function(obj){ return ');
+            break;
+          case '!':
+            tok = tok.slice(1);
+            assertProperty(tok);
+            js.push(' + obj.' + tok + ' + ');
+            break;
+          case '_':
+            tok = tok.slice(1);
+            if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
+            js.push(' }) + section(obj, "' + tok + '", ' + conds[tok] + ', function(obj){ return ');
+            break;
+            default:
+              assertProperty(tok);
+              js.push(' + escape(obj.' + tok + ') + ');
+          }
         }
       }
+
+      js = '\n'
+        + indent(escape.toString()) + ';\n\n'
+        + indent(section.toString()) + ';\n\n'
+        + '  return ' + js.join('').replace(/\r?\n/g, lineEnd);
+
+      return new Function('obj', js);
     }
 
-    js = '\n'
-      + indent(escape.toString()) + ';\n\n'
-      + indent(section.toString()) + ';\n\n'
-      + '  return ' + js.join('').replace(/\r?\n/g, lineEnd);
+  /**
+   * Assert that `prop` is a valid property.
+   *
+   * @param {String} prop
+   * @api private
+   */
 
-    return new Function('obj', js);
+  function assertProperty(prop) {
+    if (!prop.match(/^[\w.\[\]\"\\']+$/)) throw new Error('invalid property "' + prop + '"');
   }
 
-/**
- * Assert that `prop` is a valid property.
- *
- * @param {String} prop
- * @api private
- */
+  /**
+   * Assert that `prop` is undefined.
+   *
+   * @param {String} prop
+   * @api private
+   */
 
-function assertProperty(prop) {
-  if (!prop.match(/^[\w.\[\]\"\\']+$/)) throw new Error('invalid property "' + prop + '"');
-}
+  function assertUndefined(prop, value) {
+    if (typeof value != 'undefined') throw new Error('trying to overwrite existing conditional for "' + prop + '"');
+  }
 
-/**
- * Assert that `prop` is undefined.
- *
- * @param {String} prop
- * @api private
- */
+  /**
+   * Parse `str`.
+   *
+   * @param {String} str
+   * @return {Array}
+   * @api private
+   */
 
-function assertUndefined(prop, value) {
-  if (typeof value != 'undefined') throw new Error('trying to overwrite existing conditional for "' + prop + '"');
-}
+  function parse(str) {
+    return str.split(delimiter);
+  }
 
-/**
- * Parse `str`.
- *
- * @param {String} str
- * @return {Array}
- * @api private
- */
+  /**
+   * Indent `str`.
+   *
+   * @param {String} str
+   * @return {String}
+   * @api private
+   */
 
-function parse(str) {
-  return str.split(delimiter);
-}
+  function indent(str) {
+    return str.replace(/^/gm, '  ');
+  }
 
-/**
- * Indent `str`.
- *
- * @param {String} str
- * @return {String}
- * @api private
- */
+  /**
+   * Section handler.
+   *
+   * @param {Object} context obj
+   * @param {String} prop
+   * @param {Function} thunk
+   * @param {Boolean} negate
+   * @api private
+   */
 
-function indent(str) {
-  return str.replace(/^/gm, '  ');
-}
-
-/**
- * Section handler.
- *
- * @param {Object} context obj
- * @param {String} prop
- * @param {Function} thunk
- * @param {Boolean} negate
- * @api private
- */
-
-function section(obj, prop, negate, thunk) {
-  var val = obj[prop];
-  if (Array.isArray(val)) {
-    if (negate) {
-      return val.length ? '' : thunk(obj);
-    } else {
-      return val.map(thunk).join('');
+  function section(obj, prop, negate, thunk) {
+    var val = obj[prop];
+    if (Array.isArray(val)) {
+      if (negate) {
+        return val.length ? '' : thunk(obj);
+      } else {
+        return val.map(thunk).join('');
+      }
     }
+    if ('function' == typeof val) return val.call(obj, thunk(obj));
+    if (negate) val = !val;
+    if (val) return thunk(obj);
+    return '';
   }
-  if ('function' == typeof val) return val.call(obj, thunk(obj));
-  if (negate) val = !val;
-  if (val) return thunk(obj);
-  return '';
-}
 
-/**
- * Escape the given `html`.
- *
- * @param {String} html
- * @return {String}
- * @api private
- */
+  /**
+   * Escape the given `html`.
+   *
+   * @param {String} html
+   * @return {String}
+   * @api private
+   */
 
-function escape(html) {
-  return String(html)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-  
+  function escape(html) {
+    return String(html)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
   return { render: render, compile: compile };
 
 })();
