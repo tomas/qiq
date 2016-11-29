@@ -1,15 +1,20 @@
 
-/**
- * Expose `render()`.`
- */
+var Minstache = (function() {
 
-exports = module.exports = render;
+var templates = {};
+var delimiter = /\{\{ ?| ?\}\}/;
 
-/**
- * Expose `compile()`.
- */
-
-exports.compile = compile;
+// returns a hashcode for a given string
+function hashCode(str) {
+  var hash = 0;
+  if (str.length == 0) return hash;
+  for (i = 0; i < str.length; i++) {
+    char = str.charCodeAt(i);
+    hash = ((hash<<5)-hash)+char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash;
+}
 
 /**
  * Render the given mustache `str` with `obj`.
@@ -20,15 +25,16 @@ exports.compile = compile;
  * @api public
  */
 
-var delimiter = /\{\{ ?| ?\}\}/;
-
 function render(str, obj, opts) {
   obj  = obj  || {};
   opts = opts || {};
+  var key  = opts.key || hashCode(str);
 
   if (opts.delimiter) delimiter = opts.delimiter;
 
-  var fn = compile(str, opts.escapeNewLines);
+  var fn = templates[key];
+  if (!fn) fn = templates[key] = compile(str, opts.escapeNewLines);
+
   return fn(obj);
 }
 
@@ -189,3 +195,19 @@ function escape(html) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
+  
+  return { render: render, compile: compile };
+
+})();
+
+/**
+ * Expose `render()`.`
+ */
+
+exports = module.exports = Minstache.render;
+
+/**
+ * Expose `compile()`.
+ */
+
+exports.compile = Minstache.compile;
