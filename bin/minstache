@@ -4,15 +4,15 @@
  * Module dependencies.
  */
 
-var program = require('commander')
-  , mm = require('..');
+var mm = require('..'),
+    bn = require('path').basename;
 
 // options
 
-program
-  .usage('< template > js')
-  .version(require('../package.json').version)
-  .parse(process.argv);
+if (process.argv[2] && process.argv[2][0] == '-') {
+  console.log('Usage: %s < template > js', bn(process.argv[1]));
+  process.exit(1);
+}
 
 // read stdin
 
