@@ -53,7 +53,7 @@ describe('{{id}}', function(){
     var data = { foo: '123', var: 234 }
     mm('{{foo}} [[var]]', data, opts).should.equal('{{foo}} 234');
 
-    var opts = { delimiter: /\{\{ ?| ?\}\}/, skipCache: true };
+    var opts = { delimiter: /\{\{ ?| ?\}\}/ };
     mm('{{foo}} [[var]]', data, opts).should.equal('123 [[var]]');
   })
 
