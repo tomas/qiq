@@ -3,18 +3,6 @@ var Minstache = (function() {
   var templates = {};
   var delimiter = /\{\{ ?| ?\}\}/;
 
-  // returns a hashcode for a given string
-  function hashCode(str) {
-    var hash = 0;
-    if (str.length == 0) return hash;
-    for (i = 0; i < str.length; i++) {
-      char = str.charCodeAt(i);
-      hash = ((hash<<5)-hash)+char;
-      hash = hash & hash; // Convert to 32bit integer
-    }
-    return hash;
-  }
-
   /**
    * Render the given mustache `str` with `obj`.
    *
@@ -27,12 +15,11 @@ var Minstache = (function() {
   function render(str, obj, opts) {
     obj  = obj  || {};
     opts = opts || {};
-    var key  = opts.key || hashCode(str);
 
     if (opts.delimiter) delimiter = opts.delimiter;
 
-    var fn = opts.skipCache ? null : templates[key];
-    if (!fn) fn = templates[key] = compile(str, opts.escapeNewLines);
+    var fn = opts.key && templates[opts.key] || compile(str, opts.escapeNewLines);
+    if (opts.key && !templates[opts.key]) templates[opts.key] = fn;
 
     return fn(obj);
   }
