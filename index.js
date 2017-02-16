@@ -3,7 +3,6 @@ var Minstache = (function() {
   var templates = {};
   var delimiter = /\{\{ ?| ?\}\}/;
 
-
   /**
    * Section handler.
    *
@@ -45,7 +44,6 @@ var Minstache = (function() {
       .replace(/>/g, '&gt;');
   }
 
-
   /**
    * Render the given mustache `str` with `obj`.
    *
@@ -76,12 +74,16 @@ var Minstache = (function() {
    */
 
   function compile(str, escapeNewLines) {
-    var js = [];
-    var toks = parse(str);
+    var js      = [];
+    var toks    = parse(str);
     var tok;
-    var conds  = {};
-    var levels = [];
+    var conds   = {};
+    var levels  = [];
     var lineEnd = escapeNewLines ? '\\\\\\n' : '\\n';
+
+    // get function names dynamically, so they work even if mangled
+    var escape_func  = escape.name;
+    var section_func = section.name;
 
     for (var i = 0; i < toks.length; ++i) {
       tok = toks[i];
@@ -103,7 +105,7 @@ var Minstache = (function() {
             assertProperty(tok);
             assertUndefined(conds[tok]);
             conds[tok] = false;
-            js.push(' + section(obj, "' + tok + '", true, function(obj){ return ');
+            js.push(' + ' + section_func + '(obj, "' + tok + '", true, function(obj){ return ');
             break;
           case '#':
             tok = tok.slice(1);
@@ -111,7 +113,7 @@ var Minstache = (function() {
             assertProperty(tok);
             assertUndefined(tok, conds[tok]);
             conds[tok] = true;
-            js.push(' + section(obj, "' + tok + '", false, function(obj){ return ');
+            js.push(' + ' + section_func + '(obj, "' + tok + '", false, function(obj){ return ');
             break;
           case '!':
             tok = tok.slice(1);
@@ -121,11 +123,11 @@ var Minstache = (function() {
           case '_':
             tok = tok.slice(1);
             if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
-            js.push(' }) + section(obj, "' + tok + '", ' + conds[tok] + ', function(obj){ return ');
+            js.push(' }) + ' + section_func + '(obj, "' + tok + '", ' + conds[tok] + ', function(obj){ return ');
             break;
             default:
               assertProperty(tok);
-              js.push(' + escape(obj.' + tok + ') + ');
+              js.push(' + ' + escape_func + '(obj.' + tok + ') + ');
           }
         }
       }
