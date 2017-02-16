@@ -1,8 +1,8 @@
 dist: index.js
 	@echo "Generating distribution files..."
 	@rm -Rf dist && mkdir -p dist
-	@cat index.js > dist/minstache.js
-	@./node_modules/uglify-js/bin/uglifyjs --compress --mangle -- index.js > dist/minstache.min.js
+	@cat index.js > dist/qiq.js
+	@./node_modules/uglify-js/bin/uglifyjs --compress --mangle -- index.js > dist/qiq.min.js
 
 test:
 	@./node_modules/.bin/mocha \

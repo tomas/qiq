@@ -1,4 +1,4 @@
-var Minstache = (function() {
+var qiq = (function() {
 
   var templates = {};
   var delimiter = /\{\{ ?| ?\}\}/;
@@ -195,7 +195,7 @@ if (typeof module !== 'undefined' && module.exports) {
   /**
    * Expose `render()` and `compile()`.
    */
-  exports = module.exports = Minstache.render;
-  exports.compile = Minstache.compile;
+  exports = module.exports = qiq.render;
+  exports.compile = qiq.compile;
 
 }
