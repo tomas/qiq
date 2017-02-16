@@ -4,8 +4,8 @@
  * Module dependencies.
  */
 
-var mm = require('..'),
-    bn = require('path').basename;
+var qiq = require('..'),
+    bn  = require('path').basename;
 
 // options
 
@@ -18,11 +18,11 @@ if (process.argv[2] && process.argv[2][0] == '-') {
 
 var str = '';
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(chunk){ str += chunk; });
+process.stdin.on('data', function(chunk){ str += chunk.trim(); });
 process.stdin.on('end', done);
 process.stdin.resume();
 
 function done() {
-  var fn = mm.compile(str).toString();
+  var fn = qiq.compile(str).toString();
   process.stdout.write('module.exports = ' + fn);
 }
