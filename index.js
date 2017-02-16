@@ -3,6 +3,49 @@ var Minstache = (function() {
   var templates = {};
   var delimiter = /\{\{ ?| ?\}\}/;
 
+
+  /**
+   * Section handler.
+   *
+   * @param {Object} context obj
+   * @param {String} prop
+   * @param {Function} thunk
+   * @param {Boolean} negate
+   * @api private
+   */
+
+  function section(obj, prop, negate, thunk) {
+    var val = obj[prop];
+    if (Array.isArray(val)) {
+      if (negate) {
+        return val.length ? '' : thunk(obj);
+      } else {
+        return val.map(thunk).join('');
+      }
+    }
+    if ('function' == typeof val) return val.call(obj, thunk(obj));
+    if (negate) val = !val;
+    if (val) return thunk(obj);
+    return '';
+  }
+
+  /**
+   * Escape the given `html`.
+   *
+   * @param {String} html
+   * @return {String}
+   * @api private
+   */
+
+  function escape(html) {
+    return String(html)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+
   /**
    * Render the given mustache `str` with `obj`.
    *
@@ -141,59 +184,16 @@ var Minstache = (function() {
     return str.replace(/^/gm, '  ');
   }
 
-  /**
-   * Section handler.
-   *
-   * @param {Object} context obj
-   * @param {String} prop
-   * @param {Function} thunk
-   * @param {Boolean} negate
-   * @api private
-   */
-
-  function section(obj, prop, negate, thunk) {
-    var val = obj[prop];
-    if (Array.isArray(val)) {
-      if (negate) {
-        return val.length ? '' : thunk(obj);
-      } else {
-        return val.map(thunk).join('');
-      }
-    }
-    if ('function' == typeof val) return val.call(obj, thunk(obj));
-    if (negate) val = !val;
-    if (val) return thunk(obj);
-    return '';
-  }
-
-  /**
-   * Escape the given `html`.
-   *
-   * @param {String} html
-   * @return {String}
-   * @api private
-   */
-
-  function escape(html) {
-    return String(html)
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-
   return { render: render, compile: compile };
 
 })();
 
-/**
- * Expose `render()`.`
- */
+if (typeof module !== 'undefined' && module.exports) {
 
-exports = module.exports = Minstache.render;
+  /**
+   * Expose `render()` and `compile()`.
+   */
+  exports = module.exports = Minstache.render;
+  exports.compile = Minstache.compile;
 
-/**
- * Expose `compile()`.
- */
-
-exports.compile = Minstache.compile;
+}
