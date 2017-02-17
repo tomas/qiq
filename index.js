@@ -22,7 +22,14 @@ var qiq = (function() {
         return val.map(thunk).join('');
       }
     }
-    if ('function' == typeof val) return val.call(obj, thunk(obj));
+
+    // allow calling functions that might return true or false
+    // otherwise just return the result of that function
+    if ('function' == typeof val) {
+      var val = val.call(obj, thunk(obj));
+      if (typeof val != 'boolean') return val;
+    }
+
     if (negate) val = !val;
     if (val) return thunk(obj);
     return '';

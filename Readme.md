@@ -100,6 +100,21 @@ Now you can do:
   qiq(template, { works: true, awesome: false }); // => "Works? Yep, cool!";
 ```
 
+### Functions
+
+Your object can have functions that either return true or false, which are used
+to follow the template logic, or return a string in which case that is what is printed.
+
+```js
+  var template  = '{{#isEmpty}} is empty {{_else}} not empty {{/isEmpty}}!';
+  var obj = { isEmpty: function() { return false } }
+  qiq(template, list); // => "not empty";
+
+  var template  = '{{#uppercase}} these are letters {{/uppercase}}!';
+  var obj = { doSomething: function(thunk) { return thunk.toUpperCase() } }
+  qiq(template, list); // => "THESE ARE LETTERS";
+```
+
 ### Arrays
 
 ```js

@@ -105,8 +105,25 @@ describe('{{#id}}', function(){
     mm('<div class="login">\n{{#authenticated}}\nlogged in!\n{{/}}\n</div>', user).should.equal('<div class="login">\n\nlogged in!\n\n</div>');
   })
 
+  it('should support functions that return booleans', function(){
+    var obj = {
+      test: function(str) {
+        return str === 'testing'
+      }
+    };
 
-  it('should support lambdas', function(){
+    // FIXME: this is not working!
+    mm('{{#test}}testing{{_else}}no{{/test}}', obj)
+      .should.equal('no');
+
+    mm('{{#test}}yes{{_else}}no{{/test}}', obj)
+      .should.equal('no');
+
+    mm('{{#test}}testing{{/test}}', obj)
+      .should.equal('testing');
+  })
+
+  it('should support functions that return strings', function(){
     var obj = {
       md: function(str){
         return str.replace(/_(.*?)_/g, '<em>$1</em>');
