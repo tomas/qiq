@@ -27,7 +27,6 @@ var qiq = (function() {
     }
 
     var val = obj[prop];
-
     if (Array.isArray(val)) {
       if (type === 0 || type === 3) {
         return val.length ? '' : thunk(obj);
@@ -80,9 +79,7 @@ var qiq = (function() {
     obj  = obj  || {};
     opts = opts || {};
 
-    if (opts.delimiter) delimiter = opts.delimiter;
-
-    var fn = opts.key && templates[opts.key] || compile(str, opts.escapeNewLines);
+    var fn = opts.key && templates[opts.key] || compile(str, opts);
     if (opts.key && !templates[opts.key]) templates[opts.key] = fn;
 
     return fn(obj);
@@ -96,18 +93,18 @@ var qiq = (function() {
    * @api public
    */
 
-  function compile(str, escapeNewLines) {
+  function compile(str, opts) {
     var js      = [];
-    var toks    = parse(str);
-    var tok;
+    var toks    = str.split(opts.delimiter || delimiter);
     var conds   = {};
     var levels  = [];
-    var lineEnd = escapeNewLines ? '\\\\\\n' : '\\n';
+    var lineEnd = opts.escapeNewLines ? '\\\\\\n' : '\\n';
 
     // get function names dynamically, so they work even if mangled
     var escape_func  = escape.name;
     var section_func = section.name;
 
+    var tok;
     for (var i = 0; i < toks.length; ++i) {
       tok = toks[i];
       if (i % 2 == 0) {
@@ -151,7 +148,8 @@ var qiq = (function() {
             break;
             default:
               assertProperty(tok);
-              js.push(' + ' + escape_func + '(obj.' + tok + ') + ');
+              tok = tok == 'this' ? '' : '.' + tok;
+              js.push(' + ' + escape_func + '(obj' + tok + ') + ');
           }
         }
       }
@@ -185,18 +183,6 @@ var qiq = (function() {
 
   function assertUndefined(prop, value) {
     if (typeof value != 'undefined') throw new Error('trying to overwrite existing conditional for "' + prop + '"');
-  }
-
-  /**
-   * Parse `str`.
-   *
-   * @param {String} str
-   * @return {Array}
-   * @api private
-   */
-
-  function parse(str) {
-    return str.split(delimiter);
   }
 
   /**
