@@ -94,17 +94,16 @@ var qiq = (function() {
    */
 
   function compile(str, opts) {
-    var js      = [];
-    var toks    = str.split(opts.delimiter || delimiter);
-    var conds   = {};
-    var levels  = [];
-    var lineEnd = opts.escapeNewLines ? '\\\\\\n' : '\\n';
+    opts = opts || {};
+    var tok, js = [], conds = {}, levels = [];
+
+    var toks         = str.split(opts.delimiter || delimiter);
+    var lineEnd      = opts.escapeNewLines ? '\\\\\\n' : '\\n';
 
     // get function names dynamically, so they work even if mangled
     var escape_func  = escape.name;
     var section_func = section.name;
 
-    var tok;
     for (var i = 0; i < toks.length; ++i) {
       tok = toks[i];
       if (i % 2 == 0) {
