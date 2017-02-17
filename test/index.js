@@ -146,11 +146,18 @@ describe('{{#id}}', function(){
       .should.equal('some <em>markdown</em> awesome!');
   })
 
-  it('should iterate arrays', function(){
+  it('should iterate arrays of objects', function(){
     var contacts = { contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }] };
     mm('<ul>{{#contacts}}<li>{{name}}</li>{{/contacts}}</ul>', contacts)
      .should.equal('<ul><li>tobi</li><li>loki</li><li>jane</li></ul>');
   })
+
+  it('should iterate arrays of elements', function(){
+    var contacts = { numbers: ['one', 'two', 'three'] };
+    mm('<ul>{{#numbers}}<li>{{this}}</li>{{/}}</ul>', contacts)
+     .should.equal('<ul><li>one</li><li>two</li><li>three</li></ul>');
+  })
+
 })
 
 describe('{{^id}}', function(){
@@ -180,10 +187,10 @@ describe('{{^id}}', function(){
      .should.equal('users exist: nope');
   })
 
-  it('should ignore populated arrays', function(){
+  it('should process populated arrays', function(){
     var users = { users: [ 'tobi' ] };
-    mm('users exist: {{#users}}yep{{/users}}{{^users}}nope{{/users}}', users)
-     .should.equal('users exist: yep');
+    mm('users exist: {{#users}}yep, {{this}}{{/users}}{{^users}}nope{{/users}}', users)
+     .should.equal('users exist: yep, tobi');
   })
 
   it('should honor ifelse', function(){
