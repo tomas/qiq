@@ -1,5 +1,6 @@
 var qiq = (function() {
 
+  var last;
   var templates = {};
   var delimiter = /\{\{ ?| ?\}\}/;
 
@@ -13,10 +14,22 @@ var qiq = (function() {
    * @api private
    */
 
-  function section(obj, prop, negate, thunk) {
+  function section(obj, prop, type, thunk) {
+
+    // if type is 2 or 3, then this is an else block from a previous
+    // truthy or falsy block. if that block was successful, then we
+    // can skip the logic altogether by checking the last return val.
+    if (type > 1) {
+      if (last) {
+        last = null;
+        return '';
+      }
+    }
+
     var val = obj[prop];
+
     if (Array.isArray(val)) {
-      if (negate) {
+      if (type === 0 || type === 3) {
         return val.length ? '' : thunk(obj);
       } else {
         return val.map(thunk).join('');
@@ -28,9 +41,12 @@ var qiq = (function() {
     if ('function' == typeof val) {
       var val = val.call(obj, thunk(obj));
       if (typeof val != 'boolean') return val;
+
+      if (!val && type === 2) val = !val;
     }
 
-    if (negate) val = !val;
+    if (type === 0 || type === 3) val = !val;
+    last = val;
     if (val) return thunk(obj);
     return '';
   }
@@ -111,16 +127,16 @@ var qiq = (function() {
             levels.push(tok);
             assertProperty(tok);
             assertUndefined(conds[tok]);
-            conds[tok] = false;
-            js.push(' + ' + section_func + '(obj, "' + tok + '", true, function(obj){ return ');
+            conds[tok] = 0;
+            js.push(' + ' + section_func + '(obj, "' + tok + '", 0, function(obj){ return ');
             break;
           case '#':
             tok = tok.slice(1);
             levels.push(tok)
             assertProperty(tok);
             assertUndefined(tok, conds[tok]);
-            conds[tok] = true;
-            js.push(' + ' + section_func + '(obj, "' + tok + '", false, function(obj){ return ');
+            conds[tok] = 1;
+            js.push(' + ' + section_func + '(obj, "' + tok + '", 1, function(obj){ return ');
             break;
           case '!':
             tok = tok.slice(1);
@@ -130,7 +146,8 @@ var qiq = (function() {
           case '_':
             tok = tok.slice(1);
             if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
-            js.push(' }) + ' + section_func + '(obj, "' + tok + '", ' + conds[tok] + ', function(obj){ return ');
+            var num = conds[tok] + 2;
+            js.push(' }) + ' + section_func + '(obj, "' + tok + '", ' + num + ', function(obj){ return ');
             break;
             default:
               assertProperty(tok);
@@ -140,6 +157,7 @@ var qiq = (function() {
       }
 
       js = '\n'
+        + indent('var last;') + '\n'
         + indent(escape.toString()) + ';\n\n'
         + indent(section.toString()) + ';\n\n'
         + '  return ' + js.join('').replace(/\r?\n/g, lineEnd);

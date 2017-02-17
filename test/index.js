@@ -107,20 +107,32 @@ describe('{{#id}}', function(){
 
   it('should support functions that return booleans', function(){
     var obj = {
-      test: function(str) {
-        return str === 'testing'
+      bool: function(block) {
+        return true
+      },
+      test: function(block) {
+        return block == 'yes';
       }
     };
 
-    // FIXME: this is not working!
-    mm('{{#test}}testing{{_else}}no{{/test}}', obj)
+    mm('{{#bool}}yes{{/bool}}', obj)
+      .should.equal('yes');
+
+    mm('{{#bool}}yes{{_else}}no{{/}}', obj)
+      .should.equal('yes');
+
+    mm('{{^bool}}yes{{_else}}no{{/}}', obj)
       .should.equal('no');
 
-    mm('{{#test}}yes{{_else}}no{{/test}}', obj)
+    mm('{{#test}}yes{{_test}}no{{/test}}', obj)
+      .should.equal('yes');
+
+    mm('{{^test}}yes{{_test}}no{{/}}', obj)
       .should.equal('no');
 
-    mm('{{#test}}testing{{/test}}', obj)
-      .should.equal('testing');
+    mm('{{^test}}yes{{_else}}no{{/test}}', obj)
+      .should.equal('no');
+
   })
 
   it('should support functions that return strings', function(){

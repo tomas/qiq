@@ -4,6 +4,9 @@
   "description": "Minimal templating engine",
   "keywords": ["mustache", "template", "engine"],
   "author": "Tomas Pollak <tomas@forkhq.com>",
+  "scripts": {
+    "test": "mocha test"
+  },
   "dependencies": {
   },
   "devDependencies": {
