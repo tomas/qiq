@@ -106,13 +106,13 @@ Your object can have functions that either return true or false, which are used
 to follow the template logic, or return a string in which case that is what is printed.
 
 ```js
-  var template  = '{{#isEmpty}} is empty {{_else}} not empty {{/isEmpty}}!';
+  var template  = '{{#isEmpty}} is empty {{_else}} not empty {{/isEmpty}}';
   var obj = { isEmpty: function() { return false } }
-  qiq(template, list); // => "not empty";
+  qiq(template, obj); // => "not empty";
 
-  var template  = '{{#uppercase}} these are letters {{/uppercase}}!';
-  var obj = { doSomething: function(thunk) { return thunk.toUpperCase() } }
-  qiq(template, list); // => "THESE ARE LETTERS";
+  var template  = '{{#toUpper}} these are letters {{/}}';
+  var obj = { toUpper: function(thunk) { return thunk.toUpperCase() } }
+  qiq(template, obj); // => "THESE ARE LETTERS";
 ```
 
 ### Arrays
