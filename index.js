@@ -113,7 +113,7 @@ var qiq = (function() {
           case '/':
             tok = tok.slice(1);
             if (tok == '' || levels[levels.length-1] == tok) {
-              js.push(' }) + ');
+              js.push('})+');
               levels.pop();
               delete(conds[tok]);
             }
@@ -124,7 +124,7 @@ var qiq = (function() {
             assertProperty(tok);
             assertUndefined(conds[tok]);
             conds[tok] = 0;
-            js.push(' + ' + section_func + '(obj, "' + tok + '", 0, function(obj){ return ');
+            js.push('+' + section_func + '(obj,"' + tok + '",0,function(obj){return ');
             break;
           case '#':
             tok = tok.slice(1);
@@ -132,23 +132,23 @@ var qiq = (function() {
             assertProperty(tok);
             assertUndefined(tok, conds[tok]);
             conds[tok] = 1;
-            js.push(' + ' + section_func + '(obj, "' + tok + '", 1, function(obj){ return ');
+            js.push('+' + section_func + '(obj,"' + tok + '",1,function(obj){return ');
             break;
           case '!':
             tok = tok.slice(1);
             assertProperty(tok);
-            js.push(' + obj.' + tok + ' + ');
+            js.push('+obj.' + tok + '+');
             break;
           case '_':
             tok = tok.slice(1);
             if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
             var num = conds[tok] + 2;
-            js.push(' }) + ' + section_func + '(obj, "' + tok + '", ' + num + ', function(obj){ return ');
+            js.push('})+' + section_func + '(obj,"' + tok + '",' + num + ',function(obj){return ');
             break;
             default:
               assertProperty(tok);
               tok = tok == 'this' ? '' : '.' + tok;
-              js.push(' + ' + escape_func + '(obj' + tok + ') + ');
+              js.push('+' + escape_func + '(obj' + tok + ')+');
           }
         }
       }
@@ -157,7 +157,7 @@ var qiq = (function() {
         + indent('var last;') + '\n'
         + indent(escape.toString()) + ';\n\n'
         + indent(section.toString()) + ';\n\n'
-        + '  return ' + js.join('').replace(/\r?\n/g, lineEnd);
+        + ' return ' + js.join('').replace(/\r?\n/g, lineEnd);
 
       return new Function('obj', js);
     }
