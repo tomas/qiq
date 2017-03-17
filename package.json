@@ -8,6 +8,10 @@
     "engine"
   ],
   "author": "Tomas Pollak <tomas@forkhq.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tomas/qiq.git"
+  },
   "scripts": {
     "test": "mocha test"
   },
