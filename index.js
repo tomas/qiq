@@ -16,6 +16,11 @@ var qiq = (function() {
 
   function section(obj, prop, type, thunk) {
 
+    var val = obj[prop];
+
+    if (type == 4) // truthy check
+      return !val || val.length != undefined && !val.length ? '' : thunk(obj);
+
     // if type is 2 or 3, then this is an else block from a previous
     // truthy or falsy block. if that block was successful, then we
     // can skip the logic altogether by checking the last return val.
@@ -26,26 +31,15 @@ var qiq = (function() {
       }
     }
 
-    var res, val = obj[prop];
     if (Array.isArray(val)) {
-      if (type > 4) { // 5, 6
-        res = val.length ? thunk(obj) : '';
-      } else if (type > 0 && type < 3) { // 1, 2
-        res = val.length ? val.map(thunk).join('') : thunk(val);
+      if (type % 3 == 0) { // 0 or 3
+        return val.length ? '' : thunk(obj);
       } else {
-        res = val.length ? '' : thunk(obj);
+        return type == 1 ? val.map(thunk).join('') : thunk(val);
       }
-    } else if (val && val.constructor === Object) {
-      if (type > 4) {
-        res = (type == 6 && val || type == 7 || !val) ? '' : thunk(obj);
-      } else if (type == 1) {
-        res = thunk(val); // descend
-      } else {
-        res = ((type == 0 || type == 3) && val) ? '' : thunk(obj);
-      }
+    } else if (type == 1 && val && val.constructor === Object) {
+      return thunk(val); // descend
     }
-
-    if (res !== undefined) return res;
 
     // allow calling functions that might return true or false
     // otherwise just return the result of that function
@@ -56,7 +50,7 @@ var qiq = (function() {
       if (!val && type === 2) val = !val;
     }
 
-    if (type === 0 || type === 3 || type == 4 || type == 7) val = !val;
+    if (type % 3 === 0) val = !val;
     last = val;
 
     if (val) return thunk(obj);
@@ -133,10 +127,6 @@ var qiq = (function() {
             break;
           case '^':
             tok = tok.slice(1), type = 0;
-            if (tok.substr(-1) == '?') {
-              type = 4;
-              tok = tok.substring(0, tok.length-1);
-            }
             levels.push(tok);
             assertProperty(tok);
             assertUndefined(conds[tok]);
@@ -145,10 +135,6 @@ var qiq = (function() {
             break;
           case '#':
             tok = tok.slice(1), type = 1;
-            if (tok.substr(-1) == '?') {
-              type = 5;
-              tok = tok.substring(0, tok.length-1);
-            }
             levels.push(tok)
             assertProperty(tok);
             assertUndefined(tok, conds[tok]);
@@ -166,10 +152,20 @@ var qiq = (function() {
             type = conds[tok] + 2;
             js.push('})+' + section_func + '(obj,"' + tok + '",' + type + ',function(obj){return ');
             break;
-            default:
+          default:
+            if (tok.slice(-1) == '?') {
+              type = 4;
+              tok = tok.slice(0, -1);
+              levels.push(tok)
+              assertProperty(tok);
+              assertUndefined(tok, conds[tok]);
+              conds[tok] = type;
+              js.push('+' + section_func + '(obj,"' + tok + '",' + type + ',function(obj){return ');
+            } else {
               assertProperty(tok);
               tok = tok == 'this' ? '' : '.' + tok;
               js.push('+' + escape_func + '(obj' + tok + ')+');
+            }
           }
         }
       }
