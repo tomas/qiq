@@ -19,7 +19,7 @@ var qiq = (function() {
     var val = obj[prop];
 
     if (type == 4) // truthy check
-      return !val || val.length != undefined && !val.length ? '' : thunk(obj);
+      return !val || val.length !== undefined && !val.length ? '' : thunk(obj);
 
     // if type is 2 or 3, then this is an else block from a previous
     // truthy or falsy block. if that block was successful, then we
@@ -118,7 +118,7 @@ var qiq = (function() {
       } else {
         switch (tok[0]) {
           case '/':
-            tok = tok.slice(1);
+            tok = tok.slice(1).replace(/\?$/, ''); // remove optional trailing ?
             if (tok == '' || levels[levels.length-1] == tok) {
               js.push('})+');
               levels.pop();
@@ -198,7 +198,7 @@ var qiq = (function() {
    */
 
   function assertUndefined(prop, value) {
-    if (typeof value != 'undefined') throw new Error('trying to overwrite existing conditional for "' + prop + '"');
+    if (value !== undefined) throw new Error('cannot overwrite existing conditional for "' + prop + '"');
   }
 
   /**
