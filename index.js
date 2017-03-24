@@ -26,14 +26,26 @@ var qiq = (function() {
       }
     }
 
-    var val = obj[prop];
+    var res, val = obj[prop];
     if (Array.isArray(val)) {
-      if (type === 0 || type === 3) {
-        return val.length ? '' : thunk(obj);
+      if (type > 4) { // 5, 6
+        res = val.length ? thunk(obj) : '';
+      } else if (type > 0 && type < 3) { // 1, 2
+        res = val.length ? val.map(thunk).join('') : thunk(val);
       } else {
-        return val.map(thunk).join('');
+        res = val.length ? '' : thunk(obj);
+      }
+    } else if (val && val.constructor === Object) {
+      if (type > 4) {
+        res = (type == 6 && val || type == 7 || !val) ? '' : thunk(obj);
+      } else if (type == 1) {
+        res = thunk(val); // descend
+      } else {
+        res = ((type == 0 || type == 3) && val) ? '' : thunk(obj);
       }
     }
+
+    if (res !== undefined) return res;
 
     // allow calling functions that might return true or false
     // otherwise just return the result of that function
@@ -44,8 +56,9 @@ var qiq = (function() {
       if (!val && type === 2) val = !val;
     }
 
-    if (type === 0 || type === 3) val = !val;
+    if (type === 0 || type === 3 || type == 4 || type == 7) val = !val;
     last = val;
+
     if (val) return thunk(obj);
     return '';
   }
@@ -95,7 +108,7 @@ var qiq = (function() {
 
   function compile(str, opts) {
     opts = opts || {};
-    var tok, js = [], conds = {}, levels = [];
+    var tok, type, js = [], conds = {}, levels = [];
 
     var toks         = str.split(opts.delimiter || delimiter);
     var lineEnd      = opts.escapeNewLines ? '\\\\\\n' : '\\n';
@@ -119,20 +132,28 @@ var qiq = (function() {
             }
             break;
           case '^':
-            tok = tok.slice(1);
+            tok = tok.slice(1), type = 0;
+            if (tok.substr(-1) == '?') {
+              type = 4;
+              tok = tok.substring(0, tok.length-1);
+            }
             levels.push(tok);
             assertProperty(tok);
             assertUndefined(conds[tok]);
-            conds[tok] = 0;
-            js.push('+' + section_func + '(obj,"' + tok + '",0,function(obj){return ');
+            conds[tok] = type;
+            js.push('+' + section_func + '(obj,"' + tok + '",' + type + ',function(obj){return ');
             break;
           case '#':
-            tok = tok.slice(1);
+            tok = tok.slice(1), type = 1;
+            if (tok.substr(-1) == '?') {
+              type = 5;
+              tok = tok.substring(0, tok.length-1);
+            }
             levels.push(tok)
             assertProperty(tok);
             assertUndefined(tok, conds[tok]);
-            conds[tok] = 1;
-            js.push('+' + section_func + '(obj,"' + tok + '",1,function(obj){return ');
+            conds[tok] = type;
+            js.push('+' + section_func + '(obj,"' + tok + '",' + type + ',function(obj){return ');
             break;
           case '!':
             tok = tok.slice(1);
@@ -142,8 +163,8 @@ var qiq = (function() {
           case '_':
             tok = tok.slice(1);
             if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
-            var num = conds[tok] + 2;
-            js.push('})+' + section_func + '(obj,"' + tok + '",' + num + ',function(obj){return ');
+            type = conds[tok] + 2;
+            js.push('})+' + section_func + '(obj,"' + tok + '",' + type + ',function(obj){return ');
             break;
             default:
               assertProperty(tok);

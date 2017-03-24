@@ -158,6 +158,64 @@ describe('{{#id}}', function(){
      .should.equal('<ul><li>one</li><li>two</li><li>three</li></ul>');
   })
 
+  it('should iterate arrays of elements', function(){
+    var contacts = { numbers: ['one', 'two', 'three'] };
+    mm('<ul>{{#numbers}}<li>{{this}}</li>{{/}}</ul>', contacts)
+     .should.equal('<ul><li>one</li><li>two</li><li>three</li></ul>');
+  })
+
+  it('should not descend into arrays if using question mark', function(){
+    var contacts = { title: 'guys', contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }] };
+    mm('<h2>{{ #contacts? }}{{ contacts.length }} {{ title }}{{ /contacts }}</h2>', contacts)
+     .should.equal('<h2>3 guys</h2>');
+  })
+
+  it('should not descend into arrays if using question mark, reversed', function(){
+    var contacts = { title: 'guys', contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }] };
+    mm('<h2>{{ ^contacts? }}{{ contacts.length }} {{ _ }}no {{ title }}{{ /contacts }}</h2>', contacts)
+     .should.equal('<h2>no guys</h2>');
+  })
+
+  it('should descend into objects if requested and present', function(){
+    var data = { color: { r: '1', g: '2', b: 3 } };
+    mm('{{#color}}{{r}}-{{g}}-{{b}}{{_}}foobar{{/color}}', data).should.equal('1-2-3');
+  })
+
+  it('should not descend into objects if not present', function(){
+    var data = { title: 'hello' };
+    mm('{{#color}}{{title}}{{_else}}{{title}}{{/color}}', data).should.equal('hello');
+  })
+
+  it('should not descend into objects if not present, reversed', function(){
+    var data = { title: 'hello' };
+    mm('{{^color}}{{title}}{{_else}}nope{{/color}}', data).should.equal('hello');
+  })
+
+  it('should not descend into objects if present, reversed', function(){
+    var data = { title: 'looks like its there', color: true };
+    mm('{{^color}}does not exist{{_else}}{{title}}{{/color}}', data).should.equal('looks like its there');
+  })
+
+  it('should not descend into objects if question mark', function(){
+    var data = { color: { r: '1', g: '2', b: 3 } };
+    mm('{{#color?}}{{color.r}}-{{color.g}}-{{color.b}}{{_else}}hello{{/color}}', data).should.equal('1-2-3');
+  })
+
+  it('should not descend into objects if question mark, and not present', function(){
+    var data = { color: { r: '1', g: '2', b: 3 } };
+    mm('{{#missing?}}missing{{_else}}{{color.r}}-{{color.g}}-{{color.b}}{{/missing}}', data).should.equal('1-2-3');
+  })
+
+  it('should not descend into objects if question mark, reversed', function(){
+    var data = { title: 'foo', color: { r: '1', g: '2', b: 3 } };
+    mm('{{^color?}}{{title}}{{_}}{{color.r}}-{{color.g}}-{{color.b}}{{/color}}', data).should.equal('foo');
+  })
+
+  it('should not descend into objects if question mark, and not present, reversed', function(){
+    var data = { title: 'foo', color: { r: '1', g: '2', b: 3 } };
+    mm('{{^exists?}}{{title}}{{_}}{{color.r}}-{{color.g}}-{{color.b}}{{/exists}}', data).should.equal('foo');
+  })
+
 })
 
 describe('{{^id}}', function(){
