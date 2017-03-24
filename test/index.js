@@ -118,7 +118,7 @@ describe('{{#id}}', function(){
     mm('{{#bool}}yes{{/bool}}', obj)
       .should.equal('yes');
 
-    mm('{{bool?}}yes{{/bool}}', obj)
+    mm('{{bool?}}yes{{/bool?}}', obj)
       .should.equal('yes');
 
     mm('{{#bool}}yes{{_else}}no{{/}}', obj)
@@ -175,13 +175,13 @@ describe('{{#id}}', function(){
 
   it('should not descend into arrays if using question mark', function(){
     var contacts = { title: 'guys', contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }] };
-    mm('<h2>{{ contacts? }}{{ contacts.length }} {{ title }}{{ /contacts }}</h2>', contacts)
+    mm('<h2>{{ contacts? }}{{ contacts.length }} {{ title }}{{ /contacts? }}</h2>', contacts)
      .should.equal('<h2>3 guys</h2>');
   })
 
   it('should not descend into arrays if using question mark and not found', function(){
     var contacts = { title: 'guys', contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }] };
-    mm('<h2>{{ others? }}{{ contacts.length }} {{ _ }}no {{ title }}{{ /others }}</h2>', contacts)
+    mm('<h2>{{ others? }}{{ contacts.length }} {{ _ }}no {{ title }}{{ /others? }}</h2>', contacts)
      .should.equal('<h2>no guys</h2>');
   })
 
@@ -208,12 +208,12 @@ describe('{{#id}}', function(){
 
   it('should not descend into objects if question mark', function(){
     var data = { color: { r: '1', g: '2', b: 3 } };
-    mm('{{color?}}{{color.r}}-{{color.g}}-{{color.b}}{{_else}}hello{{/color}}', data).should.equal('1-2-3');
+    mm('{{color?}}{{color.r}}-{{color.g}}-{{color.b}}{{_else}}hello{{/color?}}', data).should.equal('1-2-3');
   })
 
   it('should not descend into objects if question mark, and not present', function(){
     var data = { color: { r: '1', g: '2', b: 3 } };
-    mm('{{missing?}}missing{{_else}}{{color.r}}-{{color.g}}-{{color.b}}{{/missing}}', data).should.equal('1-2-3');
+    mm('{{missing?}}missing{{_else}}{{color.r}}-{{color.g}}-{{color.b}}{{/missing?}}', data).should.equal('1-2-3');
   })
 
 })
@@ -276,6 +276,12 @@ describe('{{^id}}', function(){
      .should.equal('fails? nope');
   })
 
+  it('can do nested question mark and then descend block', function(){
+    var data = { products: [ { name: 'one' }, { name: 'two' } ] };
+    mm('{{products?}}Products: {{products.length}} --> {{#products}}{{name}} {{/products}}{{/products?}}', data)
+     .should.equal('Products: 2 --> one two ');
+  })
+
   it('should supported nested ifelses', function(){
     var data = { fails: false, hot: false };
     mm('fails? {{#fails}}yep{{_fails}}nope, {{#hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)
@@ -306,12 +312,16 @@ describe('deep objects', function() {
     mm('{{#nested}}{{#arr}}number: {{this}} {{_else}}foo{{/}}{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
   })
 
-  it('does not allow question mark directly', function() {
+  it('does not allow question mark directly, if question mark', function() {
     mm('{{nested.prop?}}awesome{{_else}}not so awesome{{/}}', obj).should.equal('not so awesome');
   })
 
+  it('does not allow question mark directly, with mark', function() {
+    mm('{{#nested.prop}}awesome{{_else}}not so awesome{{/}}', obj).should.equal('not so awesome');
+  })
+
   it('allows question mark, only if in context', function() {
-    mm('{{#nested}}{{prop?}}awesome{{_else}}not so awesome{{/}}{{/}}', obj).should.equal('awesome');
+    mm('{{#nested}}{{prop?}}awesome{{_else}}not so awesome{{/prop?}}{{/}}', obj).should.equal('awesome');
   })
 
 })
