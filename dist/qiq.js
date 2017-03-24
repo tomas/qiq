@@ -136,7 +136,7 @@ var qiq = (function() {
       } else {
         switch (tok[0]) {
           case '/':
-            tok = tok.slice(1).replace(/\?$/, ''); // remove optional trailing ?
+            tok = tok.slice(1);
             if (tok == '' || levels[levels.length-1] == tok) {
               js.push('})+');
               levels.pop();
@@ -168,17 +168,16 @@ var qiq = (function() {
             tok = tok.slice(1);
             if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
             type = conds[tok] + 2;
-            js.push('})+' + section_func + '(obj,"' + tok + '",' + type + ',function(obj){return ');
+            js.push('})+' + section_func + '(obj,"' + tok.replace(/\?$/, '') + '",' + type + ',function(obj){return ');
             break;
           default:
             if (tok.slice(-1) == '?') {
               type = 4;
-              tok = tok.slice(0, -1);
-              levels.push(tok)
-              assertProperty(tok);
+              levels.push(tok);
+              // assertProperty(tok);
               assertUndefined(tok, conds[tok]);
               conds[tok] = type;
-              js.push('+' + section_func + '(obj,"' + tok + '",' + type + ',function(obj){return ');
+              js.push('+' + section_func + '(obj,"' + tok.slice(0, -1) + '",' + type + ',function(obj){return ');
             } else {
               assertProperty(tok);
               tok = tok == 'this' ? '' : '.' + tok;
