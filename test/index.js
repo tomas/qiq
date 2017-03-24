@@ -306,10 +306,12 @@ describe('deep objects', function() {
     mm('{{#nested}}{{#arr}}number: {{this}} {{_else}}foo{{/}}{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
   })
 
-/*
-  it('allows question mark', function() {
-    mm('{{nested.prop?}}awesome{{_else}}not so awesome{{/}}', obj).should.equal('awesome');
+  it('does not allow question mark directly', function() {
+    mm('{{nested.prop?}}awesome{{_else}}not so awesome{{/}}', obj).should.equal('not so awesome');
   })
-*/
+
+  it('allows question mark, only if in context', function() {
+    mm('{{#nested}}{{prop?}}awesome{{_else}}not so awesome{{/}}{{/}}', obj).should.equal('awesome');
+  })
 
 })
