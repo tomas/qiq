@@ -14,8 +14,26 @@ var qiq = (function() {
    * @api private
    */
 
+/*
+  function flatten(obj, prefix, current) {
+    prefix = prefix || []
+    current = current || {}
+
+    if (typeof (obj) === 'object' && obj !== null) {
+      Object.keys(obj).forEach(function(key) {
+        flatten(obj[key], prefix.concat(key), current);
+      })
+    } else {
+      current[prefix.join('.')] = obj
+    }
+
+    return current;
+  }
+*/
+
   function section(obj, prop, type, thunk) {
 
+    // var obj = obj.constructor === Object ? flatten(obj) : obj;
     var val = obj[prop];
 
     if (type == 4) // truthy check
@@ -174,6 +192,7 @@ var qiq = (function() {
         + indent('var last;') + '\n'
         + indent(escape.toString()) + ';\n\n'
         + indent(section.toString()) + ';\n\n'
+        // + indent(flatten.toString()) + ';\n\n'
         + ' return ' + js.join('').replace(/\r?\n/g, lineEnd);
 
       return new Function('obj', js);

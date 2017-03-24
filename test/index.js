@@ -219,6 +219,7 @@ describe('{{#id}}', function(){
 })
 
 describe('{{^id}}', function(){
+
   it('should ignore when truthy', function(){
     var user = { admin: true };
     mm('{{^admin}}yup{{/admin}}', user).should.equal('');
@@ -286,5 +287,29 @@ describe('{{^id}}', function(){
     mm('fails? {{#fails}}yep{{_fails}}nope, {{^hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)
      .should.equal('fails? nope, cool!');
   })
+
+})
+
+describe('deep objects', function() {
+
+  var obj =  { nested: { prop: true, val: 'hello', arr: [1,2,3] } };
+
+  it('allows outputting values', function() {
+    mm('{{nested.val}}', obj).should.equal('hello');
+  })
+
+  it('does not descend directly into arrays', function() {
+    mm('{{#nested.arr}}number: {{this}} {{_else}}foo{{/}}', obj).should.equal('foo');
+  })
+
+  it('descends into arrays, if context matches', function() {
+    mm('{{#nested}}{{#arr}}number: {{this}} {{_else}}foo{{/}}{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
+  })
+
+/*
+  it('allows question mark', function() {
+    mm('{{nested.prop?}}awesome{{_else}}not so awesome{{/}}', obj).should.equal('awesome');
+  })
+*/
 
 })
