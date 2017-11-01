@@ -1,8 +1,11 @@
 var qiq = (function() {
 
-  var last;
   var templates = {};
   var delimiter = /\{\{ ?| ?\}\}/;
+
+  function functionName(fn) {
+    return fn.name || (fn.toString().match(/function (.+?)\(/)||[,''])[1];
+  }
 
   /**
    * Section handler.
@@ -13,23 +16,6 @@ var qiq = (function() {
    * @param {Boolean} negate
    * @api private
    */
-
-/*
-  function flatten(obj, prefix, current) {
-    prefix = prefix || []
-    current = current || {}
-
-    if (typeof (obj) === 'object' && obj !== null) {
-      Object.keys(obj).forEach(function(key) {
-        flatten(obj[key], prefix.concat(key), current);
-      })
-    } else {
-      current[prefix.join('.')] = obj
-    }
-
-    return current;
-  }
-*/
 
   function section(obj, prop, type, thunk) {
 
@@ -43,8 +29,8 @@ var qiq = (function() {
     // truthy or falsy block. if that block was successful, then we
     // can skip the logic altogether by checking the last return val.
     if (type > 1) {
-      if (last) {
-        last = null;
+      if (this.last) {
+        this.last = null;
         return '';
       }
     }
@@ -69,7 +55,7 @@ var qiq = (function() {
     }
 
     if (type % 3 === 0) val = !val;
-    last = val;
+    this.last = val;
 
     if (val) return thunk(obj);
     return '';
@@ -126,8 +112,8 @@ var qiq = (function() {
     var lineEnd      = opts.escapeNewLines ? '\\\\\\n' : '\\n';
 
     // get function names dynamically, so they work even if mangled
-    var escape_func  = escape.name;
-    var section_func = section.name;
+    var escape_func  = functionName(escape);
+    var section_func = functionName(section);
 
     for (var i = 0; i < toks.length; ++i) {
       tok = toks[i];
@@ -188,7 +174,6 @@ var qiq = (function() {
       }
 
       js = '\n'
-        + indent('var last;') + '\n'
         + indent(escape.toString()) + ';\n\n'
         + indent(section.toString()) + ';\n\n'
         // + indent(flatten.toString()) + ';\n\n'

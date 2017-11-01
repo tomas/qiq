@@ -3,7 +3,8 @@
  * Module dependencies.
  */
 
-var mm = require('..');
+// var mm = require('..');
+var mm = require('../dist/qiq.min');
 var should = require('should');
 
 describe('{id}', function(){
@@ -276,12 +277,6 @@ describe('{{^id}}', function(){
      .should.equal('fails? nope');
   })
 
-  it('can do nested question mark and then descend block', function(){
-    var data = { products: [ { name: 'one' }, { name: 'two' } ] };
-    mm('{{products?}}Products: {{products.length}} --> {{#products}}{{name}} {{/products}}{{/products?}}', data)
-     .should.equal('Products: 2 --> one two ');
-  })
-
   it('should supported nested ifelses', function(){
     var data = { fails: false, hot: false };
     mm('fails? {{#fails}}yep{{_fails}}nope, {{#hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)
@@ -292,6 +287,12 @@ describe('{{^id}}', function(){
     var data = { fails: false, hot: true };
     mm('fails? {{#fails}}yep{{_fails}}nope, {{^hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)
      .should.equal('fails? nope, cool!');
+  })
+
+  it('can do nested question mark and then descend block', function(){
+    var data = { products: [ { name: 'one' }, { name: 'two' } ] };
+    mm('{{products?}}Products: {{products.length}} --> {{#products}}{{name}} {{/products}}{{/products?}}', data)
+     .should.equal('Products: 2 --> one two ');
   })
 
 })
@@ -321,7 +322,7 @@ describe('deep objects', function() {
   })
 
   it('allows question mark, only if in context', function() {
-    mm('{{#nested}}{{prop?}}awesome{{_else}}not so awesome{{/prop?}}{{/}}', obj).should.equal('awesome');
+    mm('{{nested?}}{{#nested}}{{prop?}}awesome{{_else}}not so awesome{{/prop?}}{{/nested}}{{/nested?}}', obj).should.equal('awesome');
   })
 
 })
