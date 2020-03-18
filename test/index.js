@@ -3,8 +3,8 @@
  * Module dependencies.
  */
 
-var mm = require('..');
-// var mm = require('../dist/qiq.min');
+// var mm = require('..');
+var mm = require('../dist/qiq.min');
 var should = require('should');
 
 describe('{id}', function(){
