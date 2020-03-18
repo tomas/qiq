@@ -13,12 +13,13 @@
     "url": "https://github.com/tomas/qiq.git"
   },
   "scripts": {
-    "test": "mocha test"
+    "test": "mocha test",
+    "build": "rm -Rf dist && mkdir -p dist && cat index.js > dist/qiq.js && node_modules/uglify-js/bin/uglifyjs --compress --mangle -- index.js > dist/qiq.min.js"
   },
-  "dependencies": {},
   "devDependencies": {
-    "mocha": "*",
-    "should": "*"
+    "mocha": "^7.1.0",
+    "should": "^13.2.3",
+    "uglify-js": "^3.8.0",
   },
   "bin": {
     "qiq": "bin/qiq"
