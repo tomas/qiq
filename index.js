@@ -135,7 +135,7 @@ var qiq = (function() {
             assertProperty(tok);
             assertUndefined(conds[tok]);
             conds[tok] = type;
-            js.push('+' + section_func + '(obj,"' + tok + '",' + type + ',function(obj){return ');
+            js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
             break;
           case '#':
             tok = tok.slice(1), type = 1;
@@ -143,18 +143,18 @@ var qiq = (function() {
             assertProperty(tok);
             assertUndefined(tok, conds[tok]);
             conds[tok] = type;
-            js.push('+' + section_func + '(obj,"' + tok + '",' + type + ',function(obj){return ');
+            js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
             break;
           case '!':
             tok = tok.slice(1);
             assertProperty(tok);
-            js.push('+obj.' + tok + '+');
+            js.push('+o.' + tok + '+');
             break;
           case '_':
             tok = tok.slice(1);
             if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
             type = conds[tok] + 2;
-            js.push('})+' + section_func + '(obj,"' + tok.replace(/\?$/, '') + '",' + type + ',function(obj){return ');
+            js.push('})+' + section_func + '(o,"' + tok.replace(/\?$/, '') + '",' + type + ',function(o,i){return ');
             break;
           default:
             if (tok.slice(-1) == '?') {
@@ -163,11 +163,11 @@ var qiq = (function() {
               // assertProperty(tok);
               assertUndefined(tok, conds[tok]);
               conds[tok] = type;
-              js.push('+' + section_func + '(obj,"' + tok.slice(0, -1) + '",' + type + ',function(obj){return ');
+              js.push('+' + section_func + '(o,"' + tok.slice(0, -1) + '",' + type + ',function(o){return ');
             } else {
               assertProperty(tok);
-              tok = tok == 'this' ? '' : '.' + tok;
-              js.push('+' + escape_func + '(obj' + tok + ')+');
+              tok = tok == 'this' ? 'o' : (tok == 'i' ? 'i' : 'o.' + tok);
+              js.push('+' + escape_func + '(' + tok + ')+');
             }
           }
         }
@@ -179,7 +179,7 @@ var qiq = (function() {
         // + indent(flatten.toString()) + ';\n\n'
         + ' return ' + js.join('').replace(/\r?\n/g, lineEnd);
 
-      return new Function('obj', js);
+      return new Function('o', js);
     }
 
   /**

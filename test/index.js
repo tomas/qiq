@@ -3,8 +3,8 @@
  * Module dependencies.
  */
 
-// var mm = require('..');
-var mm = require('../dist/qiq.min');
+var mm = require('..');
+// var mm = require('../dist/qiq.min');
 var should = require('should');
 
 describe('{id}', function(){
@@ -147,7 +147,7 @@ describe('{{#id}}', function(){
 
   it('should support functions that return strings', function(){
     var obj = {
-      md: function(str){
+      md: function(str, i) {
         return str.replace(/_(.*?)_/g, '<em>$1</em>');
       }
     };
@@ -251,6 +251,12 @@ describe('{{^id}}', function(){
     var users = { users: [ 'tobi' ] };
     mm('users exist: {{#users}}yep, {{this}}{{/users}}{{^users}}nope{{/users}}', users)
      .should.equal('users exist: yep, tobi');
+  })
+
+  it('should include indexes', function(){
+    var users = { users: [ 'tom', 'mot' ] };
+    mm('users:{{#users}} {{i}} -> {{this}}{{/users}}', users)
+     .should.equal('users: 0 -> tom 1 -> mot');
   })
 
   it('should honor ifelse', function(){
