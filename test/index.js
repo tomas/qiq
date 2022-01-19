@@ -303,6 +303,32 @@ describe('{{^id}}', function(){
 
 })
 
+describe('{{bool?}}', function() {
+
+  it('should work as expected', function(){
+    var data = {
+      trueThing: true,
+      falseThing: false
+    };
+
+    mm('{{trueThing?}}yes{{_else}}no{{/trueThing?}}', data).should.equal('yes');
+    mm('{{falseThing?}}yes{{_else}}no{{/falseThing?}}', data).should.equal('no');
+    mm('{{otherThing?}}yes{{_else}}no{{/otherThing?}}', data).should.equal('no');
+  })
+
+  it('works ok when compiling', function() {
+    var data = {
+      trueThing: true,
+      falseThing: false
+    };
+
+    var fn = mm.compile('{{falseThing?}}yes{{_else}}no{{/falseThing?}}');
+    fn(data).should.equal('no');
+    fn(data).should.equal('no');
+  })
+
+})
+
 describe('deep objects', function() {
 
   var obj =  { nested: { prop: true, val: 'hello', arr: [1,2,3] } };

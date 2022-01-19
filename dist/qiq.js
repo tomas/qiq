@@ -29,8 +29,8 @@ var qiq = (function() {
     // truthy or falsy block. if that block was successful, then we
     // can skip the logic altogether by checking the last return val.
     if (type > 1) {
-      if (this.last) {
-        this.last = null;
+      if (section.last) {
+        section.last = null;
         return '';
       }
     }
@@ -54,8 +54,9 @@ var qiq = (function() {
       if (!val && type === 2) val = !val;
     }
 
+
     if (type % 3 === 0) val = !val;
-    this.last = val;
+    section.last = val;
 
     if (val) return thunk(obj);
     return '';
