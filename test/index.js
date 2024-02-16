@@ -1,8 +1,3 @@
-
-/**
- * Module dependencies.
- */
-
 // var mm = require('..');
 var mm = require('../dist/qiq.min');
 var should = require('should');
@@ -244,6 +239,12 @@ describe('{{^id}}', function(){
   it('should consider empty arrays falsy', function(){
     var users = { users: [] };
     mm('users exist: {{^users}}nope{{/users}}', users)
+     .should.equal('users exist: nope');
+  })
+
+  it('should consider empty arrays falsy with else', function(){
+    var users = { users: [] };
+    mm('users exist: {{users?}}yes{{_else}}nope{{/users?}}', users)
      .should.equal('users exist: nope');
   })
 

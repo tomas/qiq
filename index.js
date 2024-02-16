@@ -22,14 +22,16 @@ var qiq = (function() {
     // var obj = obj.constructor === Object ? flatten(obj) : obj;
     var val = obj[prop];
 
-    if (type == 4) // truthy check
+    if (type == 4) { // truthy check
+      section.last = val;
       return !val || val.length !== undefined && !val.length ? '' : thunk(obj);
+    }
 
     // if type is 2 or 3, then this is an else block from a previous
     // truthy or falsy block. if that block was successful, then we
     // can skip the logic altogether by checking the last return val.
     if (type > 1) {
-      if (section.last) {
+      if (section.last && (!Array.isArray(section.last) || section.last.length)) {
         section.last = null;
         return '';
       }
@@ -53,7 +55,6 @@ var qiq = (function() {
 
       if (!val && type === 2) val = !val;
     }
-
 
     if (type % 3 === 0) val = !val;
     section.last = val;
