@@ -1,5 +1,5 @@
-// var mm = require('..');
-var mm = require('../dist/qiq.min');
+var mm = require('..');
+// var mm = require('../dist/qiq.min');
 var should = require('should');
 
 describe('{id}', function(){
@@ -351,24 +351,42 @@ describe('deep objects', function() {
     mm('{{nested.val}}', obj).should.equal('hello');
   })
 
-  it('does not descend directly into arrays', function() {
-    mm('{{#nested.arr}}number: {{this}} {{_else}}foo{{/}}', obj).should.equal('foo');
+  it('descends directly into arrays', function() {
+    mm('{{#nested.arr}}number: {{this}} {{_else}}foo{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
   })
 
   it('descends into arrays, if context matches', function() {
     mm('{{#nested}}{{#arr}}number: {{this}} {{_else}}foo{{/}}{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
   })
 
-  it('does not allow question mark directly, if question mark', function() {
-    mm('{{nested.prop?}}awesome{{_else}}not so awesome{{/}}', obj).should.equal('not so awesome');
+  it('allows question mark directly, if question mark', function() {
+    mm('{{nested.prop?}}awesome{{_else}}not so awesome{{/}}', obj).should.equal('awesome');
   })
 
-  it('does not allow question mark directly, with mark', function() {
-    mm('{{#nested.prop}}awesome{{_else}}not so awesome{{/}}', obj).should.equal('not so awesome');
+  it('allows question mark directly, with mark', function() {
+    mm('{{#nested.val}}awesome{{_else}}not so awesome{{/}}', obj).should.equal('awesome');
   })
 
   it('allows question mark, only if in context', function() {
     mm('{{nested?}}{{#nested}}{{prop?}}awesome{{_else}}not so awesome{{/prop?}}{{/nested}}{{/nested?}}', obj).should.equal('awesome');
+  })
+
+  it('should traverse objects with dots', function(){
+    var data = { my: { color: { r: '1', g: '2', b: 3 } } } ;
+    mm('{{my.color.r}}-{{my.color.g}}-{{my.color.b}}', data).should.equal('1-2-3');
+  })
+
+  it('should descend into objects with dots', function(){
+    var data = { my: { color: { r: '1', g: '2', b: 3 } } };
+    mm('{{#my.color}}{{r}}-{{g}}-{{b}}{{/my.color}}', data).should.equal('1-2-3');
+  })
+
+  it('should allow reusing key in nested context', function() {
+    var data = {
+      links: [{ name: '1', links: [{ name: '1.1' }] }, { name: '2' }]
+    }
+
+    mm('{{ #links }}{{ name }}{{#links}} *{{name}}* {{/links}}{{/links}}', data).should.equal('1 *1.1* 2');
   })
 
 })

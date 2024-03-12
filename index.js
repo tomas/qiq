@@ -7,6 +7,19 @@ var qiq = (function() {
     return fn.name || (fn.toString().match(/function (.+?)\(/)||[,''])[1];
   }
 
+  function findNested(obj, key) {
+    var key, curr = obj, parts = key.split('.');
+    for (var i in parts) {
+      key = parts[i];
+      if (curr[key]) {
+        curr = curr[key];
+      } else return;
+    }
+
+    return curr;
+  }
+
+
   /**
    * Section handler.
    *
@@ -19,8 +32,8 @@ var qiq = (function() {
 
   function section(obj, prop, type, thunk) {
 
-    // var obj = obj.constructor === Object ? flatten(obj) : obj;
-    var val = obj[prop];
+    // var val = obj[prop]
+    var val = obj.constructor == Object && prop.indexOf('.') > -1 ? findNested(obj, prop) : obj[prop];
 
     if (type == 4) { // truthy check
       section.last = val;
@@ -128,23 +141,23 @@ var qiq = (function() {
             if (tok == '' || levels[levels.length-1] == tok) {
               js.push('})+');
               levels.pop();
-              delete(conds[tok]);
+              delete(conds[levels.join('.') + tok]);
             }
             break;
           case '^':
             tok = tok.slice(1), type = 0;
             levels.push(tok);
             assertProperty(tok);
-            assertUndefined(conds[tok]);
-            conds[tok] = type;
+            assertUndefined(conds[levels.join('.') + tok]);
+            conds[levels.join('.') + tok] = type;
             js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
             break;
           case '#':
             tok = tok.slice(1), type = 1;
             levels.push(tok)
             assertProperty(tok);
-            assertUndefined(tok, conds[tok]);
-            conds[tok] = type;
+            assertUndefined(tok, conds[levels.join('.') + tok]);
+            conds[levels.join('.') + tok] = type;
             js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
             break;
           case '!':
@@ -155,7 +168,7 @@ var qiq = (function() {
           case '_':
             tok = tok.slice(1);
             if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
-            type = conds[tok] + 2;
+            type = conds[levels.join('.') + tok] + 2;
             js.push('})+' + section_func + '(o,"' + tok.replace(/\?$/, '') + '",' + type + ',function(o,i){return ');
             break;
           default:
@@ -164,7 +177,7 @@ var qiq = (function() {
               levels.push(tok);
               // assertProperty(tok);
               assertUndefined(tok, conds[tok]);
-              conds[tok] = type;
+              conds[levels.join('.') + tok] = type;
               js.push('+' + section_func + '(o,"' + tok.slice(0, -1) + '",' + type + ',function(o){return ');
             } else {
               assertProperty(tok);
@@ -178,7 +191,7 @@ var qiq = (function() {
       js = '\n'
         + indent(escape.toString()) + ';\n\n'
         + indent(section.toString()) + ';\n\n'
-        // + indent(flatten.toString()) + ';\n\n'
+        + indent(findNested.toString()) + ';\n\n'
         + ' return ' + js.join('').replace(/\r?\n/g, lineEnd);
 
       return new Function('o', js);
