@@ -181,7 +181,6 @@ describe('{{#id}}', function(){
      .should.equal('<h2>no guys</h2>');
   })
 
-
   it('should descend into objects if requested and present', function(){
     var data = { color: { r: '1', g: '2', b: 3 } };
     mm('{{#color}}{{r}}-{{g}}-{{b}}{{_}}foobar{{/color}}', data).should.equal('1-2-3');
@@ -300,6 +299,20 @@ describe('{{^id}}', function(){
     var data = { products: [ { name: 'one' }, { name: 'two' } ] };
     mm('{{products?}}Products: {{products.length}} --> {{#products}}{{name}} {{/products}}{{/products?}}', data)
      .should.equal('Products: 2 --> one two ');
+  })
+
+  it('can do triple nested blocks', function(){
+    var data = {
+      menu: 'Catalog',
+      links: [
+        { name: '1' },
+        // { name: '2', links: [{ name: '2.1'}, { name: '2.2' }] }, <-- this doesn't work because it overwrites the existing 'links' var
+        { name: '2', sublinks: [{ name: '2.1' }, { name: '2.2', items: ['a', 'b', 'c'] }] },
+        { name: '3' },
+      ],
+    };
+    mm('{{menu?}}Menu: {{menu}} --> {{#links}}{{name}} {{sublinks?}}submenu:{{#sublinks}}[{{name}}]{{#items}}{{this}}{{/items}} {{/sublinks}}{{/sublinks?}}{{/links}}{{/menu?}}', data)
+     .should.equal('Menu: Catalog --> 1 2 submenu:[2.1] [2.2]abc 3 ');
   })
 
 })
