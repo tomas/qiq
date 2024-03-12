@@ -381,12 +381,18 @@ describe('deep objects', function() {
     mm('{{#my.color}}{{r}}-{{g}}-{{b}}{{/my.color}}', data).should.equal('1-2-3');
   })
 
-  it('should allow reusing key in nested context', function() {
+  it('forbids rewriting condition', function() {
     var data = {
       links: [{ name: '1', links: [{ name: '1.1' }] }, { name: '2' }]
     }
 
-    mm('{{ #links }}{{ name }}{{#links}} *{{name}}* {{/links}}{{/links}}', data).should.equal('1 *1.1* 2');
+    try {
+      mm('{{ #links }}{{ name }}{{#links}} *{{name}}* {{/links}}{{/links}}', data)
+    } catch(e) {
+      err = e
+    }
+
+    err.message.should.equal('cannot overwrite existing conditional for "links"')
   })
 
 })

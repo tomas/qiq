@@ -141,23 +141,23 @@ var qiq = (function() {
             if (tok == '' || levels[levels.length-1] == tok) {
               js.push('})+');
               levels.pop();
-              delete(conds[levels.join('.') + tok]);
+              delete(conds[tok]);
             }
             break;
           case '^':
             tok = tok.slice(1), type = 0;
             levels.push(tok);
             assertProperty(tok);
-            assertUndefined(conds[levels.join('.') + tok]);
-            conds[levels.join('.') + tok] = type;
+            assertUndefined(conds[tok]);
+            conds[tok] = type;
             js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
             break;
           case '#':
             tok = tok.slice(1), type = 1;
             levels.push(tok)
             assertProperty(tok);
-            assertUndefined(tok, conds[levels.join('.') + tok]);
-            conds[levels.join('.') + tok] = type;
+            assertUndefined(tok, conds[tok]);
+            conds[tok] = type;
             js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
             break;
           case '!':
@@ -168,7 +168,7 @@ var qiq = (function() {
           case '_':
             tok = tok.slice(1);
             if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
-            type = conds[levels.join('.') + tok] + 2;
+            type = conds[tok] + 2;
             js.push('})+' + section_func + '(o,"' + tok.replace(/\?$/, '') + '",' + type + ',function(o,i){return ');
             break;
           default:
@@ -177,7 +177,7 @@ var qiq = (function() {
               levels.push(tok);
               // assertProperty(tok);
               assertUndefined(tok, conds[tok]);
-              conds[levels.join('.') + tok] = type;
+              conds[tok] = type;
               js.push('+' + section_func + '(o,"' + tok.slice(0, -1) + '",' + type + ',function(o){return ');
             } else {
               assertProperty(tok);

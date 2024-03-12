@@ -135,7 +135,7 @@ var qiq = (function() {
             tok = tok.slice(1), type = 0;
             levels.push(tok);
             assertProperty(tok);
-            assertUndefined(conds[tok]);
+            assertUndefined(tok, conds[tok]);
             conds[tok] = type;
             js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
             break;
