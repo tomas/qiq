@@ -144,11 +144,17 @@ describe('{{#id}}', function(){
     var obj = {
       md: function(str, i) {
         return str.replace(/_(.*?)_/g, '<em>$1</em>');
+      },
+      item: {
+        name: "Foo",
+        upper: function(str, i) {
+          return str.toUpperCase()
+        },
       }
     };
 
-    mm('{{#md}}some _markdown_ awesome!{{/md}}', obj)
-      .should.equal('some <em>markdown</em> awesome!');
+    mm('{{#md}}some _markdown_ !{{/md}} {{#item}}{{#upper}}{{name}}{{/upper}}{{/item}}', obj)
+      .should.equal('some <em>markdown</em> ! FOO');
   })
 
   it('should iterate arrays of objects', function(){
@@ -393,6 +399,27 @@ describe('deep objects', function() {
     }
 
     err.message.should.equal('cannot overwrite existing conditional for "links"')
+  })
+
+})
+
+describe('helper functions', function(){
+
+  it('works with strings', function(){
+    var user = { admin: true };
+    var helpers = {
+      lower: function(str) { return str.toLowerCase() },
+      upper: function(str) { return str.toUpperCase() }
+    }
+    mm('{{admin?}}{{ upper("yup") }}{{/admin?}}', user, { helpers: helpers }).should.equal('YUP');
+  })
+
+  it('works with variables', function(){
+    var data = { user: { first_name: "Tom", last_name: "Po" } };
+    var helpers = {
+      full_name: function(first, last) { return [first,last].join(' ') }
+    }
+    mm('{{#user}}{{ full_name(first_name,last_name) }}{{/user}}', data, { helpers: helpers }).should.equal('Tom Po');
   })
 
 })
