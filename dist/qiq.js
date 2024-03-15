@@ -7,6 +7,25 @@ var qiq = (function() {
     return fn.name || (fn.toString().match(/function (.+?)\(/)||[,''])[1];
   }
 
+  function includeHelpers(helpers) {
+    if (!helpers) return '';
+    return 'var helpers = {\n' + Object.keys(helpers).map(function(name) {
+      return '  ' + name + ': ' + helpers[name].toString();
+    }).join(",\n") + '\n};\n\n';
+  }
+
+  function findNested(obj, key) {
+    var key, curr = obj, parts = key.split('.');
+    for (var i in parts) {
+      key = parts[i];
+      if (curr[key]) {
+        curr = curr[key];
+      } else return;
+    }
+
+    return curr;
+  }
+
   /**
    * Section handler.
    *
@@ -19,8 +38,8 @@ var qiq = (function() {
 
   function section(obj, prop, type, thunk) {
 
-    // var obj = obj.constructor === Object ? flatten(obj) : obj;
-    var val = obj[prop];
+    // var val = obj[prop]
+    var val = obj.constructor == Object && prop.indexOf('.') > -1 ? findNested(obj, prop) : obj[prop];
 
     if (type == 4) { // truthy check
       section.last = val;
@@ -108,14 +127,15 @@ var qiq = (function() {
 
   function compile(str, opts) {
     opts = opts || {};
-    var tok, type, js = [], conds = {}, levels = [];
+    var tok, type, fn, args, js = [], conds = {}, levels = [];
 
-    var toks         = str.split(opts.delimiter || delimiter);
-    var lineEnd      = opts.escapeNewLines ? '\\\\\\n' : '\\n';
+    var toks         = str.split(opts.delimiter || delimiter),
+        lineEnd      = opts.escapeNewLines ? '\\\\\\n' : '\\n',
+        helpers      = opts.helpers;
 
     // get function names dynamically, so they work even if mangled
-    var escape_func  = functionName(escape);
-    var section_func = functionName(section);
+    var escape_func  = functionName(escape),
+        section_func = functionName(section);
 
     for (var i = 0; i < toks.length; ++i) {
       tok = toks[i];
@@ -135,7 +155,7 @@ var qiq = (function() {
             tok = tok.slice(1), type = 0;
             levels.push(tok);
             assertProperty(tok);
-            assertUndefined(tok, conds[tok]);
+            assertUndefined(conds[tok]);
             conds[tok] = type;
             js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
             break;
@@ -166,6 +186,20 @@ var qiq = (function() {
               assertUndefined(tok, conds[tok]);
               conds[tok] = type;
               js.push('+' + section_func + '(o,"' + tok.slice(0, -1) + '",' + type + ',function(o){return ');
+            } else if (tok.match(/(.+)\((.*)\)/)) {
+              fn = RegExp.$1;
+              args = RegExp.$2;
+
+              if (!helpers[fn]) throw new Error('unknown helper "' + fn + '"');
+              args = args.split(',').map(function(arg) {
+                if (arg[0] == '"' || arg[0] == "'" || parseInt(arg) == arg || arg == true || arg == false)
+                  return arg;
+                else
+                  return 'o.' + arg.trim();
+              })
+
+              js.push('+helpers.' + fn + '(' + args + ')+');
+
             } else {
               assertProperty(tok);
               tok = tok == 'this' ? 'o' : (tok == 'i' ? 'i' : 'o.' + tok);
@@ -176,9 +210,10 @@ var qiq = (function() {
       }
 
       js = '\n'
+        + includeHelpers(helpers)
         + indent(escape.toString()) + ';\n\n'
         + indent(section.toString()) + ';\n\n'
-        // + indent(flatten.toString()) + ';\n\n'
+        + indent(findNested.toString()) + ';\n\n'
         + ' return ' + js.join('').replace(/\r?\n/g, lineEnd);
 
       return new Function('o', js);
