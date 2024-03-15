@@ -407,19 +407,20 @@ describe('helper functions', function(){
 
   it('works with strings', function(){
     var user = { admin: true };
-    var helpers = {
-      lower: function(str) { return str.toLowerCase() },
-      upper: function(str) { return str.toUpperCase() }
+    var globals = {
+      number: 123,
+      lower: function(str) { return str.toLowerCase() + globals.number },
+      upper: function(str) { return str.toUpperCase() + globals.number }
     }
-    mm('{{admin?}}{{ upper("yup") }}{{/admin?}}', user, { helpers: helpers }).should.equal('YUP');
+    mm('{{admin?}}{{ upper("yup") }}{{/admin?}}', user, { globals: globals }).should.equal('YUP123');
   })
 
   it('works with variables', function(){
     var data = { user: { first_name: "Tom", last_name: "Po" } };
-    var helpers = {
+    var globals = {
       full_name: function(first, last) { return [first,last].join(' ') }
     }
-    mm('{{#user}}{{ full_name(first_name,last_name) }}{{/user}}', data, { helpers: helpers }).should.equal('Tom Po');
+    mm('{{#user}}{{ full_name(first_name,last_name) }}{{/user}}', data, { globals: globals }).should.equal('Tom Po');
   })
 
 })

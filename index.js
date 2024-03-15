@@ -7,10 +7,10 @@ var qiq = (function() {
     return fn.name || (fn.toString().match(/function (.+?)\(/)||[,''])[1];
   }
 
-  function includeHelpers(helpers) {
-    if (!helpers) return '';
-    return 'var helpers = {\n' + Object.keys(helpers).map(function(name) {
-      return '  ' + name + ': ' + helpers[name].toString();
+  function includeGlobals(globals) {
+    if (!globals) return '';
+    return 'var globals = {\n' + Object.keys(globals).map(function(name) {
+      return '  ' + name + ': ' + globals[name].toString();
     }).join(",\n") + '\n};\n\n';
   }
 
@@ -131,7 +131,7 @@ var qiq = (function() {
 
     var toks         = str.split(opts.delimiter || delimiter),
         lineEnd      = opts.escapeNewLines ? '\\\\\\n' : '\\n',
-        helpers      = opts.helpers;
+        globals      = opts.globals;
 
     // get function names dynamically, so they work even if mangled
     var escape_func  = functionName(escape),
@@ -190,7 +190,7 @@ var qiq = (function() {
               fn = RegExp.$1;
               args = RegExp.$2;
 
-              if (!helpers[fn]) throw new Error('unknown helper "' + fn + '"');
+              if (!globals[fn]) throw new Error('unknown global "' + fn + '"');
               args = args.split(',').map(function(arg) {
                 if (arg[0] == '"' || arg[0] == "'" || parseInt(arg) == arg || arg == true || arg == false)
                   return arg;
@@ -198,7 +198,7 @@ var qiq = (function() {
                   return 'o.' + arg.trim();
               })
 
-              js.push('+helpers.' + fn + '(' + args + ')+');
+              js.push('+globals.' + fn + '(' + args + ')+');
 
             } else {
               assertProperty(tok);
@@ -210,7 +210,7 @@ var qiq = (function() {
       }
 
       js = '\n'
-        + includeHelpers(helpers)
+        + includeGlobals(globals)
         + indent(escape.toString()) + ';\n\n'
         + indent(section.toString()) + ';\n\n'
         + indent(findNested.toString()) + ';\n\n'
