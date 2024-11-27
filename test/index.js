@@ -439,4 +439,12 @@ describe('helper functions', function(){
     mm('{{#user}}{{ full_name(first_name,last_name) }}{{/user}}', data, { globals: globals }).should.equal('Tom Po');
   })
 
+  it('works with array items', function(){
+    var data = { users: [{ name: 'One'}, {name: 'Two'}, { name: 'Three'}] };
+    var globals = {
+      upcase: function(user) { return user.name.toUpperCase() }
+    }
+    mm('{{#users}}{{ upcase(this) }}{{/users}}', data, { globals: globals }).should.equal('ONETWOTHREE');
+  })
+
 })

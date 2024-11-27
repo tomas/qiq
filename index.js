@@ -203,6 +203,8 @@ var qiq = (function() {
               args = args.split(',').map(function(arg) {
                 if (arg[0] == '"' || arg[0] == "'" || parseInt(arg) == arg || arg == true || arg == false)
                   return arg;
+                else if (arg == 'this')
+                  return 'o'
                 else
                   return 'o.' + arg.trim();
               })
