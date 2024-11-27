@@ -66,7 +66,7 @@ describe('{{id}}', function(){
 describe('{{!id}}', function(){
   it('should be unescaped', function(){
     var user = { name: '<script>' };
-    mm('hi {{!name}}.', user).should.equal('hi <script>.');
+    mm('hi {{^name}}.', user).should.equal('hi <script>.');
   })
 })
 
@@ -98,7 +98,14 @@ describe('{{#id}}', function(){
 
   it('should work with regular HTML', function(){
     var user = { admin: true, authenticated: true };
-    mm('<div class="login">\n{{#authenticated}}\nlogged in!\n{{/}}\n</div>', user).should.equal('<div class="login">\n\nlogged in!\n\n</div>');
+    mm('<div class="login">\n{{#authenticated}}\nlogged in!\n{{/}}\n</div>', user)
+      .should.equal('<div class="login">\n\nlogged in!\n\n</div>');
+  })
+
+  it('should allow reusing question mark', function(){
+    var user = { admin: true, authenticated: true };
+    mm('{{admin?}}is admin{{/}} {{admin?}}still admin{{/}}', user)
+      .should.equal('is admin still admin');
   })
 
   it('should support functions that return booleans', function(){
@@ -123,19 +130,22 @@ describe('{{#id}}', function(){
     mm('{{bool?}}yes{{_else}}no{{/}}', obj)
       .should.equal('yes');
 
+    mm('{{!bool?}}yes{{_else}}no{{/}}', obj)
+      .should.equal('no');
+
     mm('{{nope?}}yes{{_else}}no{{/}}', obj)
       .should.equal('no');
 
-    mm('{{^bool}}yes{{_else}}no{{/}}', obj)
+    mm('{{!bool}}yes{{_else}}no{{/}}', obj)
       .should.equal('no');
 
     mm('{{#test}}yes{{_test}}no{{/test}}', obj)
       .should.equal('yes');
 
-    mm('{{^test}}yes{{_test}}no{{/}}', obj)
+    mm('{{!test}}yes{{_test}}no{{/}}', obj)
       .should.equal('no');
 
-    mm('{{^test}}yes{{_else}}no{{/test}}', obj)
+    mm('{{!test}}yes{{_else}}no{{/test}}', obj)
       .should.equal('no');
 
   })
@@ -171,7 +181,7 @@ describe('{{#id}}', function(){
 
   it('should not iterate nonexisting arrays', function(){
     var contacts = { numbers: ['one', 'two', 'three'] };
-    mm('<ul>{{^numbers}}<li>{{this}}</li>{{_else}}<li>no results</li>{{/}}</ul>', contacts)
+    mm('<ul>{{!numbers}}<li>{{this}}</li>{{_else}}<li>no results</li>{{/}}</ul>', contacts)
      .should.equal('<ul><li>no results</li></ul>');
   })
 
@@ -187,6 +197,12 @@ describe('{{#id}}', function(){
      .should.equal('<h2>no guys</h2>');
   })
 
+  it('should not descend into arrays if using question mark and not found (inverse)', function(){
+    var contacts = { title: 'guys', contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }] };
+    mm('<h2>{{ !others? }}{{ contacts.length }} {{ _ }}no {{ title }}{{ /others? }}</h2>', contacts)
+     .should.equal('<h2>3 </h2>');
+  })
+
   it('should descend into objects if requested and present', function(){
     var data = { color: { r: '1', g: '2', b: 3 } };
     mm('{{#color}}{{r}}-{{g}}-{{b}}{{_}}foobar{{/color}}', data).should.equal('1-2-3');
@@ -199,12 +215,12 @@ describe('{{#id}}', function(){
 
   it('should not descend into objects if not present, reversed', function(){
     var data = { title: 'hello' };
-    mm('{{^color}}{{title}}{{_else}}nope{{/color}}', data).should.equal('hello');
+    mm('{{!color}}{{title}}{{_else}}nope{{/color}}', data).should.equal('hello');
   })
 
   it('should not descend into objects if present, reversed', function(){
     var data = { title: 'looks like its there', color: { foo: 'bar' } };
-    mm('{{^color}}does not exist{{_else}}{{title}}{{/color}}', data).should.equal('looks like its there');
+    mm('{{!color}}does not exist{{_else}}{{title}}{{/color}}', data).should.equal('looks like its there');
   })
 
   it('should not descend into objects if question mark', function(){
@@ -219,31 +235,31 @@ describe('{{#id}}', function(){
 
 })
 
-describe('{{^id}}', function(){
+describe('{{!id}}', function(){
 
   it('should ignore when truthy', function(){
     var user = { admin: true };
-    mm('{{^admin}}yup{{/admin}}', user).should.equal('');
+    mm('{{!admin}}yup{{/admin}}', user).should.equal('');
   })
 
   it('should pass through when falsey', function(){
     var user = { admin: false };
-    mm('admin: {{^admin}}nope{{/admin}}', user).should.equal('admin: nope');
+    mm('admin: {{!admin}}nope{{/admin}}', user).should.equal('admin: nope');
   })
 
   it('should support nested tags', function(){
     var user = { admin: false, name: 'tobi' };
-    mm('{{^admin}}{{name}} is not an admin{{/admin}}', user).should.equal('tobi is not an admin');
+    mm('{{!admin}}{{name}} is not an admin{{/admin}}', user).should.equal('tobi is not an admin');
   })
 
   it('should support nested conditionals', function(){
     var user = { admin: false, authenticated: false };
-    mm('{{^admin}}{{^authenticated}}nope{{/}}{{/}}', user).should.equal('nope');
+    mm('{{!admin}}{{!authenticated}}nope{{/}}{{/}}', user).should.equal('nope');
   })
 
   it('should consider empty arrays falsy', function(){
     var users = { users: [] };
-    mm('users exist: {{^users}}nope{{/users}}', users)
+    mm('users exist: {{!users}}nope{{/users}}', users)
      .should.equal('users exist: nope');
   })
 
@@ -255,7 +271,7 @@ describe('{{^id}}', function(){
 
   it('should process populated arrays', function(){
     var users = { users: [ 'tobi' ] };
-    mm('users exist: {{#users}}yep, {{this}}{{/users}}{{^users}}nope{{/users}}', users)
+    mm('users exist: {{#users}}yep, {{this}}{{/users}}{{!users}}nope{{/users}}', users)
      .should.equal('users exist: yep, tobi');
   })
 
@@ -279,13 +295,13 @@ describe('{{^id}}', function(){
 
   it('should honor ifelse (inverted)', function(){
     var data = { works: true };
-    mm('fails? {{^works}}yep{{_works}}nope{{/works}}', data)
+    mm('fails? {{!works}}yep{{_works}}nope{{/works}}', data)
      .should.equal('fails? nope');
   })
 
   it('ifelse works with single char', function(){
     var data = { works: true };
-    mm('fails? {{^works}}yep{{_}}nope{{/}}', data)
+    mm('fails? {{!works}}yep{{_}}nope{{/}}', data)
      .should.equal('fails? nope');
   })
 
@@ -297,7 +313,7 @@ describe('{{^id}}', function(){
 
   it('should supported nested ifelses', function(){
     var data = { fails: false, hot: true };
-    mm('fails? {{#fails}}yep{{_fails}}nope, {{^hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)
+    mm('fails? {{#fails}}yep{{_fails}}nope, {{!hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)
      .should.equal('fails? nope, cool!');
   })
 

@@ -49,7 +49,7 @@ var qiq = (function() {
     // if type is 2 or 3, then this is an else block from a previous
     // truthy or falsy block. if that block was successful, then we
     // can skip the logic altogether by checking the last return val.
-    if (type > 1) {
+    if (type == 2 || type == 3) {
       if (section.last && (!Array.isArray(section.last) || section.last.length)) {
         section.last = null;
         return '';
@@ -144,16 +144,25 @@ var qiq = (function() {
       } else {
         switch (tok[0]) {
           case '/':
-            tok = tok.slice(1);
-            if (tok == '' || levels[levels.length-1] == tok) {
-              js.push('})+');
-              levels.pop();
-              delete(conds[tok]);
+            tok = tok.slice(1); // .replace(/\?$/, '');
+            var last = levels[levels.length-1];
+            if (tok == '') {
+              tok = last;
+            } else if (tok != last) {
+              continue;
             }
+
+            js.push('})+');
+            levels.pop();
+            delete(conds[tok]);
+
             break;
-          case '^':
+          case '!':
             tok = tok.slice(1), type = 0;
             levels.push(tok);
+            if (tok.slice(-1) == '?') {
+              type = 6; tok = tok.slice(0, -1);
+            }
             assertProperty(tok);
             assertUndefined(conds[tok]);
             conds[tok] = type;
@@ -167,7 +176,7 @@ var qiq = (function() {
             conds[tok] = type;
             js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
             break;
-          case '!':
+          case '^':
             tok = tok.slice(1);
             assertProperty(tok);
             js.push('+o.' + tok + '+');
