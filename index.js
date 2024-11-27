@@ -10,7 +10,7 @@ var qiq = (function() {
   function includeGlobals(globals) {
     if (!globals) return '';
     return 'var globals = {\n' + Object.keys(globals).map(function(name) {
-      return '  ' + name + ': ' + globals[name].toString();
+      return '  ' + name + ': ' + (typeof globals[name] == 'function' ? globals[name].toString() : JSON.stringify(globals[name]))
     }).join(",\n") + '\n};\n\n';
   }
 
