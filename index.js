@@ -40,7 +40,7 @@ var qiq = (function() {
 
     // var val = obj[prop]
     var val = obj.constructor == Object && prop.indexOf('.') > -1 ? findNested(obj, prop) : obj[prop];
-    console.log(obj, prop)
+    // console.log(prop, val, obj, type)
 
     if (type == 4) { // truthy check
       section.last = val;
@@ -131,7 +131,7 @@ var qiq = (function() {
 
   function compile(str, opts) {
     opts = opts || {};
-    var tok, type, fn, args, js = [], conds = {}, levels = [];
+    var prefix, tok, type, fn, args, js = [], conds = {}, levels = [];
 
     var toks         = str.split(opts.delimiter || delimiter),
         lineEnd      = opts.escapeNewLines ? '\\\\\\n' : '\\n',
@@ -174,11 +174,18 @@ var qiq = (function() {
             break;
           case '#':
             tok = tok.slice(1), type = 1;
-            levels.push(tok)
+            levels.push(tok);
             assertProperty(tok);
             assertUndefined(tok, conds[tok]);
+            prefix = 'o';
+            if (tok.startsWith('it.')) {
+              console.log(levels);
+              var parts = tok.split('.');
+              prefix = parts[0]; tok = parts[1];
+            }
+            // console.log(prefix, tok)
             conds[tok] = type;
-            js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(it,i){return ');
+            js.push('+' + section_func + '(' + prefix + ',"' + tok + '",' + type + ',function(it,i){return ');
             break;
           case '^':
             tok = tok.slice(1);
@@ -203,7 +210,14 @@ var qiq = (function() {
               fn = RegExp.$1;
               args = RegExp.$2;
 
-              if (!globals[fn]) throw new Error('unknown global "' + fn + '"');
+              prefix = 'globals';
+              if (fn.indexOf('.') > -1) {
+                var parts = fn.split('.');
+                prefix = parts[0]; fn = parts[1];
+              }
+
+              if (prefix == 'globals' && (!globals || !globals[fn])) throw new Error('unknown global "' + fn + '"');
+
               args = args.split(',').map(function(arg) {
                 if (arg[0] == '"' || arg[0] == "'" || parseInt(arg) == arg || arg == true || arg == false)
                   return arg;
@@ -215,7 +229,7 @@ var qiq = (function() {
                   return 'o.' + arg.trim();
               })
 
-              js.push('+globals.' + fn + '(' + args + ')+');
+              js.push('+ ' + prefix + '.' + fn + '(' + args + ')+');
 
             } else {
               assertProperty(tok);
