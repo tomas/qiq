@@ -113,8 +113,6 @@ var qiq = (function() {
     var fn = opts.key && templates[opts.key] || compile(str, opts);
     if (opts.key && !templates[opts.key]) templates[opts.key] = fn;
 
-    // console.log(fn.toString())
-
     return fn(obj);
   }
 
