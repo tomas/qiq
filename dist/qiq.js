@@ -7,10 +7,10 @@ var qiq = (function() {
     return fn.name || (fn.toString().match(/function (.+?)\(/)||[,''])[1];
   }
 
-  function includeHelpers(helpers) {
-    if (!helpers) return '';
-    return 'var helpers = {\n' + Object.keys(helpers).map(function(name) {
-      return '  ' + name + ': ' + helpers[name].toString();
+  function includeGlobals(globals) {
+    if (!globals) return '';
+    return 'var globals = {\n' + Object.keys(globals).map(function(name) {
+      return '  ' + name + ': ' + (typeof globals[name] == 'function' ? globals[name].toString() : JSON.stringify(globals[name]))
     }).join(",\n") + '\n};\n\n';
   }
 
@@ -38,7 +38,6 @@ var qiq = (function() {
 
   function section(obj, prop, type, thunk) {
 
-    // var val = obj[prop]
     var val = obj.constructor == Object && prop.indexOf('.') > -1 ? findNested(obj, prop) : obj[prop];
 
     if (type == 4) { // truthy check
@@ -49,7 +48,7 @@ var qiq = (function() {
     // if type is 2 or 3, then this is an else block from a previous
     // truthy or falsy block. if that block was successful, then we
     // can skip the logic altogether by checking the last return val.
-    if (type > 1) {
+    if (type == 2 || type == 3) {
       if (section.last && (!Array.isArray(section.last) || section.last.length)) {
         section.last = null;
         return '';
@@ -127,11 +126,11 @@ var qiq = (function() {
 
   function compile(str, opts) {
     opts = opts || {};
-    var tok, type, fn, args, js = [], conds = {}, levels = [];
+    var prefix, tok, type, fn, args, js = [], conds = {}, levels = [];
 
     var toks         = str.split(opts.delimiter || delimiter),
         lineEnd      = opts.escapeNewLines ? '\\\\\\n' : '\\n',
-        helpers      = opts.helpers;
+        globals      = opts.globals;
 
     // get function names dynamically, so they work even if mangled
     var escape_func  = functionName(escape),
@@ -144,30 +143,46 @@ var qiq = (function() {
       } else {
         switch (tok[0]) {
           case '/':
-            tok = tok.slice(1);
-            if (tok == '' || levels[levels.length-1] == tok) {
-              js.push('})+');
-              levels.pop();
-              delete(conds[tok]);
+            tok = tok.slice(1); // .replace(/\?$/, '');
+            var last = levels[levels.length-1];
+            if (tok == '') {
+              tok = last;
+            } else if (tok != last) {
+              continue;
             }
+
+            js.push('})+');
+            levels.pop();
+            delete(conds[tok]);
+
             break;
-          case '^':
+          case '!':
             tok = tok.slice(1), type = 0;
             levels.push(tok);
+            if (tok.slice(-1) == '?') {
+              type = 6; tok = tok.slice(0, -1);
+            }
             assertProperty(tok);
             assertUndefined(conds[tok]);
             conds[tok] = type;
-            js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
+            js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o){return ');
             break;
           case '#':
             tok = tok.slice(1), type = 1;
-            levels.push(tok)
+            levels.push(tok);
             assertProperty(tok);
             assertUndefined(tok, conds[tok]);
             conds[tok] = type;
-            js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
+
+            prefix = 'o';
+            if (tok.startsWith('it.')) {
+              var parts = tok.split('.');
+              prefix = parts[0]; tok = parts[1];
+            }
+
+            js.push('+' + section_func + '(' + prefix + ',"' + tok + '",' + type + ',function(it,i){return ');
             break;
-          case '!':
+          case '^':
             tok = tok.slice(1);
             assertProperty(tok);
             js.push('+o.' + tok + '+');
@@ -176,7 +191,13 @@ var qiq = (function() {
             tok = tok.slice(1);
             if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
             type = conds[tok] + 2;
-            js.push('})+' + section_func + '(o,"' + tok.replace(/\?$/, '') + '",' + type + ',function(o,i){return ');
+
+            prefix = 'o';
+            if (tok.startsWith('it.')) {
+              var parts = tok.split('.');
+              prefix = parts[0]; tok = parts[1];
+            }
+            js.push('})+' + section_func + '(' + prefix + ',"' + tok.replace(/\?$/, '') + '",' + type + ',function(o){return ');
             break;
           default:
             if (tok.slice(-1) == '?') {
@@ -185,24 +206,42 @@ var qiq = (function() {
               // assertProperty(tok);
               assertUndefined(tok, conds[tok]);
               conds[tok] = type;
-              js.push('+' + section_func + '(o,"' + tok.slice(0, -1) + '",' + type + ',function(o){return ');
+              prefix = 'o';
+              if (tok.startsWith('it.')) {
+                var parts = tok.split('.');
+                prefix = parts[0]; tok = parts[1];
+              }
+
+              js.push('+' + section_func + '(' + prefix + ',"' + tok.slice(0, -1) + '",' + type + ',function(o){return ');
             } else if (tok.match(/(.+)\((.*)\)/)) {
               fn = RegExp.$1;
               args = RegExp.$2;
 
-              if (!helpers[fn]) throw new Error('unknown helper "' + fn + '"');
+              prefix = 'globals';
+              if (fn.indexOf('.') > -1) {
+                var parts = fn.split('.');
+                prefix = parts[0]; fn = parts[1];
+              }
+
+              if (prefix == 'globals' && (!globals || !globals[fn])) throw new Error('unknown global "' + fn + '"');
+
               args = args.split(',').map(function(arg) {
                 if (arg[0] == '"' || arg[0] == "'" || parseInt(arg) == arg || arg == true || arg == false)
                   return arg;
+                else if (arg.startsWith('it.') || arg == 'it')
+                  return arg;
+                else if (arg == 'this')
+                  return 'o'
                 else
                   return 'o.' + arg.trim();
               })
 
-              js.push('+helpers.' + fn + '(' + args + ')+');
+              js.push('+ ' + prefix + '.' + fn + '(' + args + ')+');
 
             } else {
               assertProperty(tok);
-              tok = tok == 'this' ? 'o' : (tok == 'i' ? 'i' : 'o.' + tok);
+
+              tok = tok.startsWith('it.') || tok == 'it' ? tok : tok == 'this' ? 'o' : (tok == 'i' ? 'i' : 'o.' + tok);
               js.push('+' + escape_func + '(' + tok + ')+');
             }
           }
@@ -210,7 +249,7 @@ var qiq = (function() {
       }
 
       js = '\n'
-        + includeHelpers(helpers)
+        + includeGlobals(globals)
         + indent(escape.toString()) + ';\n\n'
         + indent(section.toString()) + ';\n\n'
         + indent(findNested.toString()) + ';\n\n'
