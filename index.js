@@ -270,7 +270,6 @@ var qiq = (function() {
 
             } else {
               assertProperty(tok);
-              console.log(tok)
 
               // tok = tok[0] == '.' ? tok : (tok == 'i' ? 'i' : 'o.' + tok);
               tok = tok == '.' || tok == 'it' ? 'it' : (tok.startsWith('it.') ? tok : (tok[0] == '.' ? 'it' + tok : (tok == 'i' ? 'i' : 'o.' + tok)));
