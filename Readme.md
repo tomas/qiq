@@ -16,7 +16,7 @@
   hello.qiq:
 
 ```
-Hello {{name}}! {{^authenticated}}<a href="/login">login</a>{{/authenticated}}
+Hello {{name}}! {{!authenticated}}<a href="/login">login</a>{{/authenticated}}
 ```
 
   convert it:
@@ -56,10 +56,10 @@ Now you can do:
   // nested objects also work
   var template  = 'Hi {{name}}, how is your {{day.name}}?';
   var data      = { name: 'Tommy', day: { name: 'Tuesday' } };
-  qiq(template, data); // => "Hello Tommy, how is your Tuesday?";
+  qiq(template, data); // => "Hi Tommy, how is your Tuesday?";
 
-  // to escape HTML, use a ! before your variable name
-  var template  = 'Good day {{!greeting}}';
+  // to skip HTML escaping, use a ^ before your variable name
+  var template  = 'Good day {{^greeting}}';
   qiq(template, { greeting: '<em>human</em>' }); // => "Good day <em>human</em>";
 
   // you can also separate brackets and tokens with spaces, like:
@@ -76,27 +76,27 @@ Now you can do:
 
 ```js
   // true
-  var template  = 'Hello.{{#foo}} Goodbye.{{/foo}}';
+  var template  = 'Hello.{{foo?}} Goodbye.{{/foo?}}';
   qiq(template, { foo: true }); // => "Hello. Goodbye.";
 
   // truthy
-  var template  = 'Goodbye.{{#number}} Hello.{{/number}}';
+  var template  = 'Goodbye.{{number?}} Hello.{{/number?}}';
   qiq(template, { number: 1 }); // => "Goodbye. Hello.";
 
   // false
-  var template  = 'This is {{^bar}}not {{/bar}}a test.';
+  var template  = 'This is {{!bar?}}not {{/bar?}}a test.';
   qiq(template, { bar: false }); // => "This is not a test.";
 
   // if/else
-  var template  = 'Very {{#good}}good{{_else}}bad{{/good}}.';
+  var template  = 'Very {{good?}}good{{_else}}bad{{/good?}}.';
   qiq(template, { good: true }); // => "Very good.";
 
   // if/else reversed
-  var template  = 'Such {{^ugly}}nice{{_else}}ugly{{/ugly}}!';
+  var template  = 'Such {{!ugly?}}nice{{_else}}ugly{{/ugly?}}!';
   qiq(template, { ugly: false }); // => "Such nice!";
 
   // nested if/else!
-  var template = 'Works? {{^works}}Nope.{{_else}}Yep, {{#awesome}}awesome{{_else}}cool{{/awesome}}!{{/works}}'
+  var template = 'Works? {{!works}}Nope.{{_else}}Yep, {{awesome?}}awesome{{_else}}cool{{/awesome?}}!{{/works}}'
   qiq(template, { works: true, awesome: false }); // => "Works? Yep, cool!";
 ```
 
@@ -106,7 +106,7 @@ Your object can have functions that either return true or false, which are used
 to follow the template logic, or return a string in which case that is what is printed.
 
 ```js
-  var template  = '{{#isEmpty}} is empty {{_else}} not empty {{/isEmpty}}';
+  var template  = '{{isEmpty?}} is empty {{_else}} not empty {{/isEmpty?}}';
   var obj = { isEmpty: function() { return false } }
   qiq(template, obj); // => "not empty";
 
@@ -118,7 +118,7 @@ to follow the template logic, or return a string in which case that is what is p
 ### Arrays
 
 ```js
-  var template = '<ul>{{#contacts}}<li>{{name}}</li>{{/contacts}}</ul>';
+  var template = '<ul>{{#contacts}}<li>{{it.name}}</li>{{/contacts}}</ul>';
   var list = {
     contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }]
   };
