@@ -146,6 +146,7 @@ var qiq = (function() {
         switch (tok[0]) {
           case '/':
             tok = tok.slice(1); // .replace(/\?$/, '');
+
             var last = levels[levels.length-1];
             if (tok == '') {
               tok = last;
@@ -169,6 +170,37 @@ var qiq = (function() {
             conds[tok] = type;
             js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o){return ');
             break;
+          case '?':
+            tok = tok.slice(1), type = 4;
+            levels.push(tok);
+            // assertProperty(tok);
+            assertUndefined(tok, conds[tok]);
+            conds[tok] = type;
+
+            prefix = 'o';
+            if (tok[0] == '.') {
+              prefix = 'it'; tok = tok.substring(1);
+              // var parts = tok.split('.');
+              // prefix = parts[0]; tok = parts[1];
+            }
+
+            js.push('+' + section_func + '(' + prefix + ',"' + tok + '",' + type + ',function(o){return ');
+            break;
+
+          case '_':
+            tok = tok.slice(1);
+            if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
+            type = conds[tok] + 2;
+
+            prefix = 'o';
+            if (tok[0] == '.') {
+              prefix = 'it'; tok = tok.substring(1);
+              // var parts = tok.split('.');
+              // prefix = parts[0]; tok = parts[1];
+            }
+            js.push('})+' + section_func + '(' + prefix + ',"' + tok.replace(/\?$/, '') + '",' + type + ',function(o){return ');
+            break;
+
           case '#':
             tok = tok.slice(1), type = 1;
             levels.push(tok);
@@ -187,24 +219,13 @@ var qiq = (function() {
 
             js.push('+' + section_func + '(' + prefix + ',"' + tok + '",' + type + ',function(it,i){return ');
             break;
+
           case '^':
             tok = tok.slice(1);
             assertProperty(tok);
             js.push('+o.' + tok + '+');
             break;
-          case '_':
-            tok = tok.slice(1);
-            if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
-            type = conds[tok] + 2;
 
-            prefix = 'o';
-            if (tok[0] == '.') {
-              prefix = 'it'; tok = tok.substring(1);
-              // var parts = tok.split('.');
-              // prefix = parts[0]; tok = parts[1];
-            }
-            js.push('})+' + section_func + '(' + prefix + ',"' + tok.replace(/\?$/, '') + '",' + type + ',function(o){return ');
-            break;
           default:
             if (tok.slice(-1) == '?') {
               type = 4;

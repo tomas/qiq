@@ -124,6 +124,9 @@ describe('{{#id}}', function(){
     mm('{{bool?}}yes{{/bool?}}', obj)
       .should.equal('yes');
 
+    mm('{{?bool}}yes{{/}}', obj)
+      .should.equal('yes');
+
     mm('{{#bool}}yes{{_else}}no{{/}}', obj)
       .should.equal('yes');
 
