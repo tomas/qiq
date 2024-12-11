@@ -40,6 +40,7 @@ var qiq = (function() {
 
     // var val = obj[prop]
     var val = obj.constructor == Object && prop.indexOf('.') > -1 ? findNested(obj, prop) : obj[prop];
+    console.log(obj, prop)
 
     if (type == 4) { // truthy check
       section.last = val;
@@ -63,6 +64,7 @@ var qiq = (function() {
         return type == 1 ? val.map(thunk).join('') : thunk(val);
       }
     } else if (type == 1 && val && val.constructor === Object) {
+      console.log(val, thunk.toString())
       return thunk(val); // descend
     }
 
@@ -113,6 +115,8 @@ var qiq = (function() {
 
     var fn = opts.key && templates[opts.key] || compile(str, opts);
     if (opts.key && !templates[opts.key]) templates[opts.key] = fn;
+
+    // console.log(fn.toString())
 
     return fn(obj);
   }
@@ -166,7 +170,7 @@ var qiq = (function() {
             assertProperty(tok);
             assertUndefined(conds[tok]);
             conds[tok] = type;
-            js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
+            js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o){return ');
             break;
           case '#':
             tok = tok.slice(1), type = 1;
@@ -174,7 +178,7 @@ var qiq = (function() {
             assertProperty(tok);
             assertUndefined(tok, conds[tok]);
             conds[tok] = type;
-            js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o,i){return ');
+            js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(it,i){return ');
             break;
           case '^':
             tok = tok.slice(1);
@@ -185,7 +189,7 @@ var qiq = (function() {
             tok = tok.slice(1);
             if (tok == '' || tok == 'else') tok = levels[levels.length-1]; // assume last one
             type = conds[tok] + 2;
-            js.push('})+' + section_func + '(o,"' + tok.replace(/\?$/, '') + '",' + type + ',function(o,i){return ');
+            js.push('})+' + section_func + '(o,"' + tok.replace(/\?$/, '') + '",' + type + ',function(o){return ');
             break;
           default:
             if (tok.slice(-1) == '?') {
@@ -203,6 +207,8 @@ var qiq = (function() {
               args = args.split(',').map(function(arg) {
                 if (arg[0] == '"' || arg[0] == "'" || parseInt(arg) == arg || arg == true || arg == false)
                   return arg;
+                else if (arg.startsWith('it.') || arg == 'it')
+                  return arg;
                 else if (arg == 'this')
                   return 'o'
                 else
@@ -213,7 +219,8 @@ var qiq = (function() {
 
             } else {
               assertProperty(tok);
-              tok = tok == 'this' ? 'o' : (tok == 'i' ? 'i' : 'o.' + tok);
+
+              tok = tok.startsWith('it.') || tok == 'it' ? tok : tok == 'this' ? 'o' : (tok == 'i' ? 'i' : 'o.' + tok);
               js.push('+' + escape_func + '(' + tok + ')+');
             }
           }
