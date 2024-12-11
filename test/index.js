@@ -440,11 +440,11 @@ describe('helper functions', function(){
   })
 
   it('works with array items', function(){
-    var data = { users: [{ name: 'One'}, {name: 'Two'}, { name: 'Three'}] };
+    var data = { foo: 123, users: [{ name: 'One'}, {name: 'Two'}, { name: 'Three'}] };
     var globals = {
-      upcase: function(user) { return user.name.toUpperCase() }
+      upcase: function(user, foo) { return user.name.toUpperCase() + foo }
     }
-    mm('{{#users}}{{ upcase(this) }}{{/users}}', data, { globals: globals }).should.equal('ONETWOTHREE');
+    mm('{{#users}}{{ upcase(it, foo) }}{{/users}}', data, { globals: globals }).should.equal('ONE123TWO123THREE123');
   })
 
 })
