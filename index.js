@@ -113,6 +113,8 @@ var qiq = (function() {
     var fn = opts.key && templates[opts.key] || compile(str, opts);
     if (opts.key && !templates[opts.key]) templates[opts.key] = fn;
 
+    // console.log(fn.toString())
+
     return fn(obj);
   }
 
@@ -175,10 +177,13 @@ var qiq = (function() {
             conds[tok] = type;
 
             prefix = 'o';
-            if (tok.startsWith('it.')) {
-              var parts = tok.split('.');
-              prefix = parts[0]; tok = parts[1];
+            if (tok[0] == '.') {
+              prefix = 'it'; tok = tok.substring(1);
             }
+            // if (tok.startsWith('it.')) {
+            //   var parts = tok.split('.');
+            //   prefix = parts[0]; tok = parts[1];
+            // }
 
             js.push('+' + section_func + '(' + prefix + ',"' + tok + '",' + type + ',function(it,i){return ');
             break;
@@ -193,9 +198,10 @@ var qiq = (function() {
             type = conds[tok] + 2;
 
             prefix = 'o';
-            if (tok.startsWith('it.')) {
-              var parts = tok.split('.');
-              prefix = parts[0]; tok = parts[1];
+            if (tok[0] == '.') {
+              prefix = 'it'; tok = tok.substring(1);
+              // var parts = tok.split('.');
+              // prefix = parts[0]; tok = parts[1];
             }
             js.push('})+' + section_func + '(' + prefix + ',"' + tok.replace(/\?$/, '') + '",' + type + ',function(o){return ');
             break;
@@ -207,9 +213,10 @@ var qiq = (function() {
               assertUndefined(tok, conds[tok]);
               conds[tok] = type;
               prefix = 'o';
-              if (tok.startsWith('it.')) {
-                var parts = tok.split('.');
-                prefix = parts[0]; tok = parts[1];
+              if (tok[0] == '.') {
+                prefix = 'it'; tok = tok.substring(1);
+                // var parts = tok.split('.');
+                // prefix = parts[0]; tok = parts[1];
               }
 
               js.push('+' + section_func + '(' + prefix + ',"' + tok.slice(0, -1) + '",' + type + ',function(o){return ');
@@ -218,20 +225,22 @@ var qiq = (function() {
               args = RegExp.$2;
 
               prefix = 'globals';
-              if (fn.indexOf('.') > -1) {
-                var parts = fn.split('.');
-                prefix = parts[0]; fn = parts[1];
+
+
+              if (fn[0] == '.') {
+                prefix = 'it'; fn = fn.substring(1);
               }
+
+              // '.first_name,.last_name' => it.first_name,it.last_name
+              args = args.replace(/(^|,)\./g, '$1it.').replace(/it\.\s*,/g, 'it,');
 
               if (prefix == 'globals' && (!globals || !globals[fn])) throw new Error('unknown global "' + fn + '"');
 
               args = args.split(',').map(function(arg) {
                 if (arg[0] == '"' || arg[0] == "'" || parseInt(arg) == arg || arg == true || arg == false)
                   return arg;
-                else if (arg.startsWith('it.') || arg == 'it')
+                else if (arg.startsWith('it'))
                   return arg;
-                else if (arg == 'this')
-                  return 'o'
                 else
                   return 'o.' + arg.trim();
               })
@@ -240,8 +249,10 @@ var qiq = (function() {
 
             } else {
               assertProperty(tok);
+              console.log(tok)
 
-              tok = tok.startsWith('it.') || tok == 'it' ? tok : tok == 'this' ? 'o' : (tok == 'i' ? 'i' : 'o.' + tok);
+              // tok = tok[0] == '.' ? tok : (tok == 'i' ? 'i' : 'o.' + tok);
+              tok = tok == '.' || tok == 'it' ? 'it' : (tok.startsWith('it.') ? tok : (tok[0] == '.' ? 'it' + tok : (tok == 'i' ? 'i' : 'o.' + tok)));
               js.push('+' + escape_func + '(' + tok + ')+');
             }
           }

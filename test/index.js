@@ -163,25 +163,25 @@ describe('{{#id}}', function(){
       }
     };
 
-    mm('{{#md}}some _markdown_ !{{/md}} {{#item}}{{it.upper(it.name)}}{{/item}}', obj)
+    mm('{{#md}}some _markdown_ !{{/md}} {{#item}}{{.upper(.name)}}{{/item}}', obj)
       .should.equal('some <em>markdown</em> ! FOO');
   })
 
   it('should iterate arrays of objects', function(){
     var contacts = { contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }] };
-    mm('<ul>{{#contacts}}<li>{{it.name}}</li>{{_}}bar{{/contacts}}</ul>', contacts)
+    mm('<ul>{{#contacts}}<li>{{.name}}</li>{{_}}bar{{/contacts}}</ul>', contacts)
      .should.equal('<ul><li>tobi</li><li>loki</li><li>jane</li></ul>');
   })
 
   it('should iterate arrays of elements', function(){
     var contacts = { numbers: ['one', 'two', 'three'] };
-    mm('<ul>{{#numbers}}<li>{{it}}</li>{{_else}}foo{{/}}</ul>', contacts)
+    mm('<ul>{{#numbers}}<li>{{.}}</li>{{_else}}foo{{/}}</ul>', contacts)
      .should.equal('<ul><li>one</li><li>two</li><li>three</li></ul>');
   })
 
   it('should not iterate nonexisting arrays', function(){
     var contacts = { numbers: ['one', 'two', 'three'] };
-    mm('<ul>{{!numbers}}<li>{{it}}</li>{{_else}}<li>no results</li>{{/}}</ul>', contacts)
+    mm('<ul>{{!numbers}}<li>{{.}}</li>{{_else}}<li>no results</li>{{/}}</ul>', contacts)
      .should.equal('<ul><li>no results</li></ul>');
   })
 
@@ -205,7 +205,7 @@ describe('{{#id}}', function(){
 
   it('should descend into objects if requested and present', function(){
     var data = { color: { r: '1', g: '2', b: 3 } };
-    mm('{{#color}}{{it.r}}-{{it.g}}-{{it.b}}{{_}}foobar{{/color}}', data).should.equal('1-2-3');
+    mm('{{#color}}{{.r}}-{{.g}}-{{.b}}{{_}}foobar{{/color}}', data).should.equal('1-2-3');
   })
 
   it('should not descend into objects if not present', function(){
@@ -271,13 +271,13 @@ describe('{{!id}}', function(){
 
   it('should process populated arrays', function(){
     var users = { users: [ 'tobi' ] };
-    mm('users exist: {{#users}}yep, {{it}}{{/users}}{{!users}}nope{{/users}}', users)
+    mm('users exist: {{#users}}yep, {{.}}{{/users}}{{!users}}nope{{/users}}', users)
      .should.equal('users exist: yep, tobi');
   })
 
   it('should include indexes', function(){
     var users = { users: [ 'tom', 'mot' ] };
-    mm('users:{{#users}} {{i}} -> {{it}}{{/users}}', users)
+    mm('users:{{#users}} {{i}} -> {{.}}{{/users}}', users)
      .should.equal('users: 0 -> tom 1 -> mot');
   })
 
@@ -319,7 +319,7 @@ describe('{{!id}}', function(){
 
   it('can do nested question mark and then descend block', function(){
     var data = { products: [ { name: 'one' }, { name: 'two' } ] };
-    mm('{{products?}}Products: {{products.length}} --> {{#products}}{{it.name}} {{/products}}{{/products?}}', data)
+    mm('{{products?}}Products: {{products.length}} --> {{#products}}{{.name}} {{/products}}{{/products?}}', data)
      .should.equal('Products: 2 --> one two ');
   })
 
@@ -333,7 +333,7 @@ describe('{{!id}}', function(){
         { name: '3' },
       ],
     };
-    mm('{{menu?}}Menu: {{menu}} --> {{#links}}{{it.name}} {{it.sublinks?}}submenu:{{#it.sublinks}}[{{it.name}}]{{#it.items}}{{it}}{{/it.items}} {{/it.sublinks}}{{/it.sublinks?}}{{/links}}{{/menu?}}', data)
+    mm('{{menu?}}Menu: {{menu}} --> {{#links}}{{.name}} {{.sublinks?}}submenu:{{#.sublinks}}[{{.name}}]{{#.items}}{{.}}{{/.items}} {{/.sublinks}}{{/.sublinks?}}{{/links}}{{/menu?}}', data)
      .should.equal('Menu: Catalog --> 1 2 submenu:[2.1] [2.2]abc 3 ');
   })
 
@@ -374,11 +374,11 @@ describe('deep objects', function() {
   })
 
   it('descends directly into arrays', function() {
-    mm('{{#nested.arr}}number: {{it}} {{_else}}foo{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
+    mm('{{#nested.arr}}number: {{.}} {{_else}}foo{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
   })
 
   it('descends into arrays, if context matches', function() {
-    mm('{{#nested}}{{#it.arr}}number: {{it}} {{_else}}foo{{/}}{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
+    mm('{{#nested}}{{#.arr}}number: {{.}} {{_else}}foo{{/}}{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
   })
 
   it('allows question mark directly, if question mark', function() {
@@ -390,7 +390,7 @@ describe('deep objects', function() {
   })
 
   it('allows question mark, only if in context', function() {
-    mm('{{nested?}}{{#nested}}{{it.prop?}}awesome{{_else}}not so awesome{{/it.prop?}}{{/nested}}{{/nested?}}', obj).should.equal('awesome');
+    mm('{{nested?}}{{#nested}}{{.prop?}}awesome{{_else}}not so awesome{{/.prop?}}{{/nested}}{{/nested?}}', obj).should.equal('awesome');
   })
 
   it('should traverse objects with dots', function(){
@@ -400,7 +400,7 @@ describe('deep objects', function() {
 
   it('should descend into objects with dots', function(){
     var data = { my: { name: 'superman', color: { r: '1', g: '2', b: 3 } } };
-    mm('{{#my.color}}{{it.r}}-{{it.g}}-{{it.b}} -- {{my.name}}{{/my.color}}', data).should.equal('1-2-3 -- superman');
+    mm('{{#my.color}}{{.r}}-{{it.g}}-{{.b}} -- {{my.name}}{{/my.color}}', data).should.equal('1-2-3 -- superman');
   })
 
   it('forbids rewriting condition', function() {
@@ -436,7 +436,7 @@ describe('helper functions', function(){
     var globals = {
       full_name: function(first, last) { return [first,last].join(' ') }
     }
-    mm('{{#user}}{{ full_name(it.first_name,it.last_name) }}{{/user}}', data, { globals: globals }).should.equal('Tom Po');
+    mm('{{#user}}{{ full_name(.first_name,.last_name) }}{{/user}}', data, { globals: globals }).should.equal('Tom Po');
   })
 
   it('works with array items', function(){
@@ -444,7 +444,7 @@ describe('helper functions', function(){
     var globals = {
       upcase: function(user, foo) { return user.name.toUpperCase() + foo }
     }
-    mm('{{#users}}{{ upcase(it, foo) }}{{/users}}', data, { globals: globals }).should.equal('ONE123TWO123THREE123');
+    mm('{{#users}}{{ upcase(., foo) }}{{/users}}', data, { globals: globals }).should.equal('ONE123TWO123THREE123');
   })
 
 })
