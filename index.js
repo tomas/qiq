@@ -169,7 +169,7 @@ var qiq = (function() {
             js.push('+' + section_func + '(o,"' + tok + '",' + type + ',function(o){return ');
             break;
           case '?':
-            tok = tok.slice(1), type = 4;
+            tok = tok, type = 4;
             levels.push(tok);
             // assertProperty(tok);
             assertUndefined(tok, conds[tok]);
@@ -182,7 +182,7 @@ var qiq = (function() {
               // prefix = parts[0]; tok = parts[1];
             }
 
-            js.push('+' + section_func + '(' + prefix + ',"' + tok + '",' + type + ',function(o){return ');
+            js.push('+' + section_func + '(' + prefix + ',"' + tok.slice(1) + '",' + type + ',function(o){return ');
             break;
 
           case '_':
@@ -243,15 +243,19 @@ var qiq = (function() {
               fn = RegExp.$1;
               args = RegExp.$2;
 
-              prefix = 'globals';
-
-
-              if (fn[0] == '.') {
+              prefix = 'o';
+              if (fn[0] == '@') {
+                prefix = 'globals'; fn = fn.substring(1);
+              } else if (fn[0] == '.') {
                 prefix = 'it'; fn = fn.substring(1);
               }
 
               // '.first_name,.last_name' => it.first_name,it.last_name
-              args = args.replace(/(^|,)\./g, '$1it.').replace(/it\.\s*,/g, 'it,');
+              if (args == '.') {
+                args = 'it';
+              } else {
+                args = args.replace(/(^|,)\./g, '$1it.').replace(/it\.\s*,/g, 'it,');
+              }
 
               if (prefix == 'globals' && (!globals || !globals[fn])) throw new Error('unknown global "' + fn + '"');
 

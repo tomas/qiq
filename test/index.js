@@ -431,7 +431,15 @@ describe('helper functions', function(){
       lower: function(str) { return str.toLowerCase() + globals.number },
       upper: function(str) { return str.toUpperCase() + globals.number }
     }
-    mm('{{admin?}}{{ upper("yup") }}{{/admin?}}', user, { globals: globals }).should.equal('YUP123');
+    mm('{{admin?}}{{ @upper("yup") }}{{/admin?}}', user, { globals: globals }).should.equal('YUP123');
+  })
+
+  it('works with strings (function in object)', function(){
+    var user = {
+      admin: true,
+      upper: function(str) { return str.toUpperCase() }
+    }
+    mm('{{admin?}}{{ upper("yup") }}{{/admin?}}', user).should.equal('YUP');
   })
 
   it('works with variables', function(){
@@ -439,7 +447,7 @@ describe('helper functions', function(){
     var globals = {
       full_name: function(first, last) { return [first,last].join(' ') }
     }
-    mm('{{#user}}{{ full_name(.first_name,.last_name) }}{{/user}}', data, { globals: globals }).should.equal('Tom Po');
+    mm('{{#user}}{{ @full_name(.first_name,.last_name) }}{{/user}}', data, { globals: globals }).should.equal('Tom Po');
   })
 
   it('works with array items', function(){
@@ -447,7 +455,7 @@ describe('helper functions', function(){
     var globals = {
       upcase: function(user, foo) { return user.name.toUpperCase() + foo }
     }
-    mm('{{#users}}{{ upcase(., foo) }}{{/users}}', data, { globals: globals }).should.equal('ONE123TWO123THREE123');
+    mm('{{#users}}{{ @upcase(., foo) }}{{/users}}', data, { globals: globals }).should.equal('ONE123TWO123THREE123');
   })
 
 })
