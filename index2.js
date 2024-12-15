@@ -95,7 +95,7 @@ const htmlencode = (s)=> {
 
 var Utils = {
   f: {
-    h: htmlencode
+    h: htmlencode,
     slug(str) { return str.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') }
     // upper: function(s) { return s.toUpperCase() },
     // lower: function(s) { return s.toLowerCase() },
