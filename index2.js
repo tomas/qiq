@@ -16,12 +16,10 @@ const Helpers = {
   lte:  truthTest('lte',  (left, right) => Number(left) <=  Number(right)),
   gt:   truthTest('gt',   (left, right) => Number(left) >   Number(right)),
   gte:  truthTest('gte',  (left, right) => Number(left) >=  Number(right)),
-
   first:  (params, locals) => locals.$idx === 0,
   last:   (params, locals) => locals.$length && locals.$length - 1 === locals.$idx,
   sep:    (params, locals) => locals.$length && locals.$length - 1 !== locals.$idx,
-
-  select: () => console.log('Error : @select not supported !'),
+  // select: () => console.log('Error : @select not supported !'),
 };
 
 /*
@@ -96,7 +94,7 @@ var Utils = {
 
   h: function (t, p, l) {
     if (!Helpers[t]) {
-      throw new Error(`Error: helper @${t} not found!`);
+      throw new Error(`helper @${t} missing!`);
     }
     return Helpers[t](p, l);
   },
@@ -156,10 +154,10 @@ var Utils = {
 // };
 
 // remove spaces and double quotes
-function stripDoubleQuotes(s) {
-  const regexp = new RegExp('"', 'sg');
-  return s.replace(regexp, '');
-};
+// function stripDoubleQuotes(s) {
+//   const regexp = new RegExp('"', 'sg');
+//   return s.replace(regexp, '');
+// };
 
 //
 function getTagName(s) {
@@ -230,48 +228,47 @@ function parseParams(s) {
 */
 
 
-
-const Tags = {
+var Tags = {
 
   // if
-  '?': function(parser, block) {
-    parser.pushBlock(block);
-    parser.stackBlock(block);
+  '?': function(p, b) {
+    p.pushBlock(b);
+    p.stackBlock(b);
   },
 
   // loop
-  '#': function(parser, block) {
-    parser.pushBlock(block);
-    if (!block.selfClosedTag) {
-      parser.stackBlock(block);
-    }
+  '#': function(p, b) {
+    p.pushBlock(b);
+    // if (!b.selfClosedTag) {
+    //   p.stackBlock(b);
+    // }
   },
 
-  '^': function(parser, block) {
-    parser.pushBlock(block);
-    parser.stackBlock(block);
+  '^': function(p, b) {
+    p.pushBlock(b);
+    p.stackBlock(b);
   },
 
   // helper
-  '@': function(parser, block) {
-    parser.pushBlock(block);
-    if (!block.selfClosedTag) {
-      parser.stackBlock(block);
-    }
+  '@': function(p, b) {
+    p.pushBlock(b);
+    // if (!b.selfClosedTag) {
+    //   p.stackBlock(b);
+    // }
   },
 
   // body
-  ':': function(parser, block) {
-    if (block.tag != 'else')
-      throw new Error(`Unexpected tag {${block.type}${block.tag}`)
-    parser.addBody(block.tag);
+  ':': function(p, b) {
+    if (b.tag != 'else')
+      throw new Error(`Unexpected tag {${b.type}${b.tag}`)
+    p.addBody(b.tag);
   },
 
   // end
-  '/': function(parser, block) {
-    const opening = parser.pop();
-    if (opening && opening.type !== '>' && opening.tag !== block.tag)  {
-      console.error(`Open/close tag mismatch! '${opening.tag}' <> '${block.tag}'`);
+  '/': function(p, b) {
+    const opening = p.pop();
+    if (opening && opening.type !== '>' && opening.tag !== b.tag)  {
+      console.error(`Open/close tag mismatch! '${opening.tag}' <> '${b.tag}'`);
     }
   },
 }
@@ -287,12 +284,12 @@ class Parser {
 
   // add string
   pushString(str) {
-    if (config.htmltrim) {
-      // remove line returns and following spaces
-      str = str.replace(/[\r\n]+\s*/g , '');
-      // escape backslashes
-      str = str.replace(/\\/g, '\\\\');
-    }
+    // if (config.htmltrim) {
+    //   // remove line returns and following spaces
+    //   str = str.replace(/[\r\n]+\s*/g , '');
+    //   // escape backslashes
+    //   str = str.replace(/\\/g, '\\\\');
+    // }
 
     // escape single quotes
     str = str.replace(/'/g, '\\\'');
@@ -316,26 +313,26 @@ class Parser {
   }
 
   // stack the block, use its buffer as current
-  stackBlock(block)  {
-    block.buffer  = [];
-    block.current = block.buffer;
-    this.buffer   = block.buffer;
-    this.stack.push(block);
+  stackBlock(b)  {
+    b.buffer  = [];
+    b.current = b.buffer;
+    this.buffer   = b.buffer;
+    this.stack.push(b);
   }
 
-  getLastBlock() {
+  lastBlock() {
     return this.stack[this.stack.length-1];
   }
 
   pop() {
     const block = this.stack.pop();
-    const last  = this.getLastBlock();
+    const last  = this.lastBlock();
     this.buffer = last && last.current || this.global;
     return block;
   }
 
   addBody(tag) {
-    const last = this.getLastBlock();
+    const last = this.lastBlock();
     if (!last) {
       throw new Error('Cannot add body outside of a block');
     }
@@ -347,23 +344,23 @@ class Parser {
 
   parse(str) {
     // remove spaces at the beginning of lines and line breaks
-    if (config.htmltrim) {
-      str = str.replace(/^\s+/g, '');
-    } else {
+    // if (config.htmltrim) {
+    //   str = str.replace(/^\s+/g, '');
+    // } else {
       str = str.replace(/\r/g , '\\r').replace(/\n/g , '\\n');
-    }
+    // }
 
     // remove comments
     // str = removeComments(str);
 
-    const openRegexp   = new RegExp('(.*?)\\{', 'msg');
-    const closeRegexp  = new RegExp('(.*?)\\}', 'msg');
+    var regStart   = new RegExp('(.*?)\\{', 'msg');
+    var regClose  = new RegExp('(.*?)\\}', 'msg');
 
     let index = 0;
 
     // find opening '{'
     let openMatch, closeMatch;
-    while ((openMatch = openRegexp.exec(str)) !== null) {
+    while ((openMatch = regStart.exec(str)) !== null) {
       if (openMatch[1]) {
         // preceding string
         this.pushString(openMatch[1]);
@@ -372,8 +369,8 @@ class Parser {
 
       // find closing '}'
       let tag = '';
-      closeRegexp.lastIndex = index;
-      while ((closeMatch = closeRegexp.exec(str)) !== null) {
+      regClose.lastIndex = index;
+      while ((closeMatch = regClose.exec(str)) !== null) {
         tag += closeMatch[1];
         // skip when closing an internal '{'
         if (closeMatch[1].lastIndexOf('{') === -1) {
@@ -388,7 +385,7 @@ class Parser {
       }
 
       index = closeMatch.index + closeMatch[0].length;
-      openRegexp.lastIndex = index;
+      regStart.lastIndex = index;
 
       if (!this.parseTag(tag)) {
         // tag is ignored: push content to buffer
@@ -433,17 +430,17 @@ class Parser {
     }
 
     // set self closing tag
-    if (str.endsWith('/')) {
-      block.selfClosedTag = true;
-      str = str.substring(0, str.length - 1);
-    }
+    // if (str.endsWith('/')) {
+    //   block.selfClosedTag = true;
+    //   str = str.substring(0, str.length - 1);
+    // }
 
     // remove first char
     block.tag = getTagName(str);
 
     // parse params
     // block.params = parseParams(str);
-    block.params = {};
+    // block.params = {};
 
     // invoke tag function
     tag(this, block);
@@ -568,12 +565,12 @@ class Compiler {
         if (!block.buffer) {
           this.r += `a(a${i})`;
         } else {
-          const it = block.params.it && stripDoubleQuotes(block.params.it);
+          // const it = block.params.it && stripDoubleQuotes(block.params.it);
           this.r += `l.$length=a${i}.length;`; // current array length
           this.r += `for(var i${i}=0;i${i}<a${i}.length;i${i}++){`;
-          if (it) {
-            this.r += `l.${it}=a${i}[i${i}];`;
-          }
+          // if (it) {
+          //   this.r += `l.${it}=a${i}[i${i}];`;
+          // }
           this.r += `l._it=a${i}[i${i}];`;
           this.r += `l.$idx=i${i};`; // current id
           this.compileBuffer(block.buffer, true);
@@ -631,7 +628,7 @@ class Compiler {
     if (isArray) {
       this.r += `ctx${i}._it=l._it;`;
       this.r += `ctx${i}.idx=l.$idx;`;
-      this.r += `ctx${i}.length=l.$length;`;
+      // this.r += `ctx${i}.length=l.$length;`;
     }
 
     this.r += `c.ctx.push(ctx${i});`;
@@ -649,7 +646,7 @@ class Compiler {
     if (isArray) {
       this.r += `l._it=p_ctx${i}._it;`;
       this.r += `l.$idx=p_ctx${i}.idx;`;
-      this.r += `l.$length=p_ctx${i}.length;`;
+      // this.r += `l.$length=p_ctx${i}.length;`;
     }
   }
 
@@ -770,16 +767,15 @@ class Compiler {
 }
 
 // render template
-module.exports.render = (src, data, res) => {
-  const buffer = new Parser().parse(str);
-  const compiled = new Compiler().compile(buffer);
-  return this.renderCompiled(compiled, data, res);
-};
+// module.exports.render = (src, data, res) => {
+//   const buffer = new Parser().parse(str);
+//   const compiled = new Compiler().compile(buffer);
+//   return this.renderCompiled(compiled, data, res);
+// };
 
 // render template file
 module.exports.compile = (src) => {
-  const buffer = new Parser().parse(src);
-  return new Compiler().compile(buffer);
+  return new Compiler().compile(new Parser().parse(src));
 };
 
 module.exports.renderCompiled = function(compiled, data, res) {
