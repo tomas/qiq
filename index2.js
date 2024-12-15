@@ -299,14 +299,6 @@ var Tags = (function() {
     parser.stackBlock(block);
   };
 
-  const _include = (parser, block) => {
-    block.file = block.params.$;
-    parser.pushBlock(block);
-    if (!block.selfClosedTag) {
-      parser.stackBlock(block);
-    }
-  };
-
   const _insert = (parser, block) => {
     parser.pushBlock(block);
     if (!block.selfClosedTag) {
@@ -335,7 +327,6 @@ var Tags = (function() {
     '@': _helper,
     ':': _body,
     '/': _end,
-    '>': _include,
     '<': _content,
     '+': _insert,
     '~': _special,
@@ -664,21 +655,6 @@ class Compiler {
         }
         this.r += '}';
         this._else(block);
-      } else if (block.type === '>') {
-        // include
-
-        // precompile if buffer
-        if (block.buffer) {
-          this.r += `c._$body=function(){var r='';`;
-          this.r += 'var a=s?function(x){s.write(String(x))}:function(x){r+=x};';
-          this.compileBuffer(block.buffer);
-          this.r += 'return r;};';
-        }
-
-        this._pushContext(block.params);
-        const file = this._getParam(block.file);
-        this.r += `a(u.i(${file})(l,u,c,s));`;
-        this._popContext(block.params);
       } else if (!block.type){
         // default: raw text
         this.r += `a('${block}');`;
@@ -738,132 +714,6 @@ class Compiler {
   }
 
 
-  //
-  _addParamsToLocals(params) {
-    const { i } = this;
-    Object.keys(params).forEach(key => {
-      if (key === '$') {
-        return;
-      }
-      this.r += `c.p_${key}${i}=l.${key};`;
-      this.r += `l.${key}=${this._getParam(params[key])};`;
-    });
-  }
-
-  //
-  _cleanParamsFromLocals(params) {
-    const { i } = this;
-    Object.keys(params).forEach(key => {
-      if (key === '$') {
-        return;
-      }
-      this.r += `l.${key}=c.p_${key}${i};`;
-      this.r += `delete c.p_${key}${i};`;
-    });
-  }
-
-  _getParam(param) {
-    if (param[0] === '"') {
-      // string
-      let ret = [], match, index = 0, s;
-
-      param = ParseUtils.stripDoubleQuotes(param);
-      if (!param) {
-        // empty string
-        return '\'\'';
-      }
-
-      // replace references in string
-      const ref = new RegExp('\\{([^\\}]*)\\}', 'msg');
-      while ((match = ref.exec(param)) !== null) {
-        // left part
-        ret.push(`'${param.substring(index, match.index)}'`);
-        index = match.index + match[0].length;
-        ret.push(this._getValue(match[1], 'u.d'));
-      }
-      // final right part
-      if (index < param.length) {
-        s = param.substring(index, param.length);
-        // escape single quotes
-        s = s.replace(/'/g, '\\\'');
-        ret.push(`'${s}'`);
-      }
-      return ret.join('+');
-    }
-
-    if (!isNaN(param)) {
-      return param;
-    }
-
-    // ref
-    return this._getValue(param);
-  }
-
-  //
-  _getValue(tag, utilFn='u.v') {
-
-    if (!isNaN(tag)) {
-      return tag;
-    }
-
-    // . notation
-    if (tag === '.') {
-      return 'l._it';
-    } else if (tag[0] === '.') {
-      tag = '_it' + tag;
-    }
-
-    const elements = [];
-    let i, c, sub = false, idx = 0;
-    // parse ref
-    for (i = 0; i < tag.length; i = 1 + i) {
-      c = tag[i];
-      if (!sub && (c === '.' || c === '[')) {
-        if (i > idx) {
-          elements.push(tag.substring(idx, i));
-        }
-        idx = i + 1;
-        sub = (c === '[');
-      } else if (c === ']') {
-        elements.push('[' + this._getValue(tag.substring(idx, i)) + ']');
-        sub = false;
-        idx = i + 1;
-      }
-    }
-
-    // last part
-    if (i > idx) {
-      elements.push(tag.substring(idx, i));
-    }
-
-    // build string
-    let current = 'l', ret = [];
-    elements.forEach((element) => {
-      if (element[0] === '[') {
-        current += element;
-      } else {
-        current += '.' + element;
-      }
-      ret.push(current);
-    });
-
-    // use utilFn (u.v by default) to invoke function on last element
-    if (ret.length === 1) {
-      return `${utilFn}(${ret[0]},null,l)`;
-    }
-    const _this = ret.slice(0,-1);
-    return `${utilFn}(${ret.join('&&')},${_this.join('&&')},l)`;
-
-  }
-
-  _getParams(params) {
-    let ret = '{';
-    for (let key in params) {
-      ret += `${key}:${this._getParam(params[key])},`;
-    }
-    ret += '}';
-    return ret;
-  }
 
   _getReference(block) {
     let ret = this._getValue(block.tag, 'u.d');
