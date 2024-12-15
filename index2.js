@@ -5,9 +5,9 @@
 //   htmltrim: true,
 // }
 
-const truthTest = (tag, test) => {
-  return (params, locals) => test(params.key, params.value);
-};
+// const truthTest = (tag, test) => {
+//   return (params, locals) => test(params.key, params.value);
+// };
 
 // const Helpers = {
 //   eq:   truthTest('eq',   (left, right) => left === right ),
@@ -33,7 +33,6 @@ const Checks = {
 
 /*
 var Filters = (function() {
-
 
   const escapeJs = (s) => {
     if (typeof s === 'string') {
@@ -97,6 +96,7 @@ const htmlencode = (s)=> {
 var Utils = {
   f: {
     h: htmlencode
+    slug(str) { return str.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') }
     // upper: function(s) { return s.toUpperCase() },
     // lower: function(s) { return s.toLowerCase() },
   }, // filters
@@ -242,13 +242,14 @@ var Tags = {
     p.stackB(b);
   },
 
-  // loop
-  '#': function(p, b) {
+  // not
+  '!': function(p, b) {
     p.putB(b);
     p.stackB(b);
   },
 
-  '^': function(p, b) {
+  // loop
+  '#': function(p, b) {
     p.putB(b);
     p.stackB(b);
   },
@@ -269,7 +270,7 @@ var Tags = {
   // end
   '/': function(p, b) {
     var o = p.pop();
-    if (o && o.type !== '>' && o.tag !== b.tag)  {
+    if (o && b.tag && o.tag !== b.tag)  {
       console.error(`tag mismatch: ${o.tag} vs ${b.tag}`);
     }
   },
@@ -458,7 +459,8 @@ class Parser {
     if (match) {
       b.tag = str.substring(0, match.index);
       const f = match[0].replace(/ /g, '').substring(1).split('|');
-      const s = f.indexOf('s');
+      console.log(f)
+      const s = f.indexOf('raw');
       if (s > -1) {
         f.splice(s, 1);
       } else {
@@ -550,9 +552,9 @@ class Compiler {
       //     this.compBuf(block.buf);
       //     this.r += '}';
       //   }
-      } else if (b.type === '?' || b.type === '^' ) {
+      } else if (b.type === '?' || b.type === '!' ) {
         // conditional block
-        const not = b.type === '^' ? '!' : '';
+        const not = b.type === '!' ? '!' : '';
         this._pushC();
         this.r += `if(${not}u.b(${this._val(b.tag)})){`;
         this.compBuf(b.buf);
@@ -786,16 +788,12 @@ module.exports.renderCompiled = function(compiled, data, res) {
   return compiled(data, Utils, null, res);
 }
 
-// Helpers and filters
-// module.exports.helpers = Helpers;
-// module.exports.filters = Utils.f;
-
-
 var template = `
-  Hello {@if foo == 'bar'}is bar!{:else}not bar{/if}
+  Hello {@if foo == 'bar'}is bar!{:else}not bar {/}
+  {html|raw}
 `
 
 fn = module.exports.compile(template)
 // console.log('compiled', fn.toString())
-var res = module.exports.renderCompiled(fn, { foo: 'bar' });
+var res = module.exports.renderCompiled(fn, { foo: 'bar', html: '<script>asdas</script>' });
 console.log(res)
