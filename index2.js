@@ -1,25 +1,34 @@
-const config = {
-  // cache: false,
-  // views: './views',
-  htmlencode: true,
-  htmltrim: true,
-}
+// const config = {
+//   // cache: false,
+//   // views: './views',
+//   htmlencode: true,
+//   htmltrim: true,
+// }
 
 const truthTest = (tag, test) => {
   return (params, locals) => test(params.key, params.value);
 };
 
-const Helpers = {
-  eq:   truthTest('eq',   (left, right) => left === right ),
-  ne:   truthTest('ne',   (left, right) => left !== right ),
-  lt:   truthTest('lt',   (left, right) => Number(left) <   Number(right)),
-  lte:  truthTest('lte',  (left, right) => Number(left) <=  Number(right)),
-  gt:   truthTest('gt',   (left, right) => Number(left) >   Number(right)),
-  gte:  truthTest('gte',  (left, right) => Number(left) >=  Number(right)),
-  first:  (params, locals) => locals.$idx === 0,
-  last:   (params, locals) => locals.$length && locals.$length - 1 === locals.$idx,
-  sep:    (params, locals) => locals.$length && locals.$length - 1 !== locals.$idx,
-  // select: () => console.log('Error : @select not supported !'),
+// const Helpers = {
+//   eq:   truthTest('eq',   (left, right) => left === right ),
+//   ne:   truthTest('ne',   (left, right) => left !== right ),
+//   lt:   truthTest('lt',   (left, right) => Number(left) <   Number(right)),
+//   lte:  truthTest('lte',  (left, right) => Number(left) <=  Number(right)),
+//   gt:   truthTest('gt',   (left, right) => Number(left) >   Number(right)),
+//   gte:  truthTest('gte',  (left, right) => Number(left) >=  Number(right)),
+//   first:  (params, locals) => locals.$idx === 0,
+//   last:   (params, locals) => locals.$length && locals.$length - 1 === locals.$idx,
+//   sep:    (params, locals) => locals.$length && locals.$length - 1 !== locals.$idx,
+//   // select: () => console.log('Error : @select not supported !'),
+// };
+
+const Checks = {
+  '==': function(left, right) { return left === right },
+  '!=': function(left, right) { return left !== right },
+  '<':  function(left, right) { return Number(left) <   Number(right)},
+  '<=': function(left, right) { return Number(left) <=  Number(right)},
+  '>':  function(left, right) { return Number(left) >   Number(right)},
+  '>=': function(left, right) { return Number(left) >=  Number(right)},
 };
 
 /*
@@ -92,11 +101,9 @@ var Utils = {
     // lower: function(s) { return s.toLowerCase() },
   }, // filters
 
-  h: function (t, p, l) {
-    if (!Helpers[t]) {
-      throw new Error(`helper @${t} missing!`);
-    }
-    return Helpers[t](p, l);
+  // if check
+  c: function (t, p, l) {
+    return Checks[t](p, l);
   },
 
   // return array
@@ -123,7 +130,6 @@ var Utils = {
     }
     return true;
   },
-
 
   // return value (if it's a function, invoke it with locals)
   v: function(s, t, l) {
@@ -232,43 +238,39 @@ var Tags = {
 
   // if
   '?': function(p, b) {
-    p.pushBlock(b);
-    p.stackBlock(b);
+    p.putB(b);
+    p.stackB(b);
   },
 
   // loop
   '#': function(p, b) {
-    p.pushBlock(b);
-    // if (!b.selfClosedTag) {
-    //   p.stackBlock(b);
-    // }
+    p.putB(b);
+    p.stackB(b);
   },
 
   '^': function(p, b) {
-    p.pushBlock(b);
-    p.stackBlock(b);
+    p.putB(b);
+    p.stackB(b);
   },
 
-  // helper
+  // if
   '@': function(p, b) {
-    p.pushBlock(b);
-    // if (!b.selfClosedTag) {
-    //   p.stackBlock(b);
-    // }
+    p.putB(b);
+    p.stackB(b);
   },
 
   // body
   ':': function(p, b) {
     if (b.tag != 'else')
-      throw new Error(`Unexpected tag {${b.type}${b.tag}`)
+      throw new Error(`wrong tag {${b.type}${b.tag}`)
     p.addBody(b.tag);
   },
 
   // end
   '/': function(p, b) {
-    const opening = p.pop();
-    if (opening && opening.type !== '>' && opening.tag !== b.tag)  {
-      console.error(`Open/close tag mismatch! '${opening.tag}' <> '${b.tag}'`);
+    var o = p.pop();
+    if (o && o.type !== '>' && o.tag !== b.tag)  {
+      console.error(`tag mismatch: ${o.tag} vs ${b.tag}`);
     }
   },
 }
@@ -276,14 +278,14 @@ var Tags = {
 class Parser {
 
   constructor() {
-    this.global     = [];           // global buffer, to be returned by parse function
-    this.buffer     = this.global;  // current buffer, where content is added
+    this.global     = [];           // global buf, to be returned by parse function
+    this.buf        = this.global;     // cur buf, where content is added
     this.stack      = [];           // stack of parents blocks
     this.contents   = {};           // contents to be replaced in layouts
   }
 
   // add string
-  pushString(str) {
+  pushStr(str) {
     // if (config.htmltrim) {
     //   // remove line returns and following spaces
     //   str = str.replace(/[\r\n]+\s*/g , '');
@@ -294,112 +296,111 @@ class Parser {
     // escape single quotes
     str = str.replace(/'/g, '\\\'');
 
-    const i     = this.buffer.length - 1;
-    const last  = this.buffer[i];
+    const i     = this.buf.length - 1;
+    const last  = this.buf[i];
 
-    // concat with previous string buffer
+    // concat with previous string buf
     if (typeof last === 'string') {
-      this.buffer[i] = last + str;
+      this.buf[i] = last + str;
       return;
     }
 
     // push
-    this.buffer.push(str);
+    this.buf.push(str);
   }
 
   // push block
-  pushBlock(block) {
-    this.buffer.push(block);
+  putB(b) {
+    this.buf.push(b);
   }
 
-  // stack the block, use its buffer as current
-  stackBlock(b)  {
-    b.buffer  = [];
-    b.current = b.buffer;
-    this.buffer   = b.buffer;
+  // stack the block, use its buf as cur
+  stackB(b)  {
+    b.buf  = [];
+    b.cur = b.buf;
+    this.buf   = b.buf;
     this.stack.push(b);
   }
 
-  lastBlock() {
+  lastB() {
     return this.stack[this.stack.length-1];
   }
 
   pop() {
-    const block = this.stack.pop();
-    const last  = this.lastBlock();
-    this.buffer = last && last.current || this.global;
-    return block;
+    const b = this.stack.pop();
+    const last = this.lastB();
+    this.buf = last && last.cur || this.global;
+    return b;
   }
 
   addBody(tag) {
-    const last = this.lastBlock();
+    const last = this.lastB();
     if (!last) {
-      throw new Error('Cannot add body outside of a block');
+      throw new Error('no block, cannot add body');
     }
-    last.bodies       = last.bodies || {};
-    last.bodies[tag]  = [];
-    last.current      = last.bodies[tag];
-    this.buffer       = last.bodies[tag];
+    last.bods       = last.bods || {};
+    last.bods[tag]  = [];
+    this.buf = last.cur = last.bods[tag];
   }
 
-  parse(str) {
+  parse(str, opts) {
     // remove spaces at the beginning of lines and line breaks
     // if (config.htmltrim) {
     //   str = str.replace(/^\s+/g, '');
-    // } else {
+    // } else {``
       str = str.replace(/\r/g , '\\r').replace(/\n/g , '\\n');
     // }
 
     // remove comments
     // str = removeComments(str);
 
-    var regStart   = new RegExp('(.*?)\\{', 'msg');
+    var regStart  = new RegExp('(.*?)\\{', 'msg');
     var regClose  = new RegExp('(.*?)\\}', 'msg');
 
     let index = 0;
 
     // find opening '{'
-    let openMatch, closeMatch;
-    while ((openMatch = regStart.exec(str)) !== null) {
-      if (openMatch[1]) {
+    let openM, closeM;
+    while ((openM = regStart.exec(str)) !== null) {
+      if (openM[1]) {
         // preceding string
-        this.pushString(openMatch[1]);
+        this.pushStr(openM[1]);
       }
-      index = openMatch.index + openMatch[0].length;
+      index = openM.index + openM[0].length;
 
       // find closing '}'
       let tag = '';
       regClose.lastIndex = index;
-      while ((closeMatch = regClose.exec(str)) !== null) {
-        tag += closeMatch[1];
+      while ((closeM = regClose.exec(str)) !== null) {
+        tag += closeM[1];
         // skip when closing an internal '{'
-        if (closeMatch[1].lastIndexOf('{') === -1) {
+        if (closeM[1].lastIndexOf('{') === -1) {
           break;
         }
         tag += '}';
       }
 
-      if (!closeMatch) {
+      if (!closeM) {
         // parsing error
-        throw new Error(`Missing closing "}" at index ${index}`);
+        throw new Error(`Missing closing "}" at idx ${index}`);
       }
 
-      index = closeMatch.index + closeMatch[0].length;
+      index = closeM.index + closeM[0].length;
       regStart.lastIndex = index;
 
       if (!this.parseTag(tag)) {
-        // tag is ignored: push content to buffer
-        this.pushString(`{${tag}}`);
+        // tag is ignored: push content to buf
+        this.pushStr(`{${tag}}`);
       }
     }
 
     // stack should be empty
     if (this.stack.length > 0) {
-      throw new Error(`Missing closing tag for {${this.stack[0].type}${this.stack[0].tag}...`);
+      throw new Error(`Missing closing tag for {${this.stack[0].type}${this.stack[0].tag}`);
     }
 
     if (index < str.length) {
-      this.pushString(str.slice(index));
+      this.pushStr(str.slice(index));
     }
 
     // console.log('--- done ---');
@@ -409,10 +410,9 @@ class Parser {
 
   // parse tag. returns true if tag was found
   parseTag(str) {
-
     const tag = Tags[str[0]];
 
-    const block = {
+    const b = {
       type: str[0],
       tag:  str,
     };
@@ -423,47 +423,50 @@ class Parser {
         return false;
       }
       // reference
-      block.type = 'r';
-      this.parseFilters(str, block);
-      this.pushBlock(block);
+      b.type = 'r';
+      this.parseF(str, b);
+      this.putB(b);
       return true;
     }
 
-    // set self closing tag
-    // if (str.endsWith('/')) {
-    //   block.selfClosedTag = true;
-    //   str = str.substring(0, str.length - 1);
-    // }
-
     // remove first char
-    block.tag = getTagName(str);
+    b.tag = getTagName(str);
+
+    if (b.type == '@') {
+      var matches = str.match(/if (.+)\s?(==|>=|<=|<|>)\s?(.+)/);
+      if (!matches) return false; // no match method found
+
+      b.method = matches[2];
+      // b.params = { key: matches[1].trim(), value: matches[3].trim().replace(/['|"]/g, '') };
+      b.params = { key: matches[1].trim(), value: matches[3].trim() };
+    }
 
     // parse params
-    // block.params = parseParams(str);
-    // block.params = {};
+    // b.params = parseParams(str);
+    // b.params = {};
 
     // invoke tag function
-    tag(this, block);
+    tag(this, b);
 
     return true;
   }
 
-  parseFilters(str, block) {
-    // parse filters
-    const filtersRegexp = new RegExp('([ ]*\\|[ ]*\\w+)+', 'g');
-    const filtersMatch  = filtersRegexp.exec(str);
-    if (filtersMatch) {
-      block.tag = str.substring(0, filtersMatch.index);
-      const f   = filtersMatch[0].replace(/ /g, '').substring(1).split('|');
-      const s   = f.indexOf('s');
+  // parse filters
+  parseF(str, b) {
+    var regexp = new RegExp('([ ]*\\|[ ]*\\w+)+', 'g');
+    var match  = regexp.exec(str);
+    if (match) {
+      b.tag = str.substring(0, match.index);
+      const f = match[0].replace(/ /g, '').substring(1).split('|');
+      const s = f.indexOf('s');
       if (s > -1) {
         f.splice(s, 1);
-      } else if (config.htmlencode) {
+      } else {
         f.push('h');
       }
-      block.f = f;
-    } else if (config.htmlencode) {
-      block.f = ['h'];
+      b.f = f;
+    } else {
+      b.f = ['h'];
     }
   }
 
@@ -496,8 +499,8 @@ class Cache {
 
     // load, parse & compile
     const src       = FileUtils.loadFile(filePath);
-    const buffer    = new Parser().parse(src);
-    compiled        = new Compiler().compile(buffer);
+    const buf    = new Parser().parse(src);
+    compiled        = new Compiler().compile(buf);
 
     // console.log(compiled.toString())
 
@@ -519,103 +522,104 @@ class Compiler {
     this.r += 'var a=s?function(x){s.write(String(x))}:function(x){r+=x};';
   }
 
-  compileBuffer(buffer) {
+  // compile buffer
+  compBuf(buf) {
     // precompile, for content functions
-    // buffer.forEach(block => {
+    // buf.forEach(block => {
     //   if (block.type === '<') {
     //     this.r += `c._${block.tag}=function(){var r='';`;
     //     this.r += 'var a=s?function(x){s.write(String(x))}:function(x){r+=x};';
-    //     this.compileBuffer(block.buffer);
+    //     this.compBuf(block.buf);
     //     this.r += 'return r;};';
     //   }
     // });
 
     //
-    buffer.forEach(block => {
-      if (block.type === 'r') {
+    buf.forEach(b => {
+      if (b.type === 'r') {
         // reference
-        this.r += `a(${this._getReference(block)});`;
-      // } else if (block.type === '+' && !block.tag) {
+        this.r += `a(${this._getRef(b)});`;
+      // } else if (block.type === '+' && !b.tag) {
       //   // insert body (invoke content function)
       //   this.r += `if(c._$body){a(c._$body());c._$body=null;}`;
       // } else if (block.type === '+') {
       //   // insert content (invoke content function)
       //   this.r += `if(c._${block.tag}){a(c._${block.tag}())}`;
-      //   if (block.buffer) {
+      //   if (block.buf) {
       //     this.r += 'else{';
-      //     this.compileBuffer(block.buffer);
+      //     this.compBuf(block.buf);
       //     this.r += '}';
       //   }
-      } else if (block.type === '?' || block.type === '^' ) {
+      } else if (b.type === '?' || b.type === '^' ) {
         // conditional block
-        const not = block.type === '^' ? '!' : '';
-        this._pushContext();
-        this.r += `if(${not}u.b(${this._getValue(block.tag)})){`;
-        this.compileBuffer(block.buffer);
+        const not = b.type === '^' ? '!' : '';
+        this._pushC();
+        this.r += `if(${not}u.b(${this._val(b.tag)})){`;
+        this.compBuf(b.buf);
         this.r += '}';
-        this._else(block);
-        this._popContext();
-      } else if (block.type === '#') {
+        this._else(b);
+        this._popC();
+      } else if (b.type === '#') {
         // loop block
         this.i = this.i + 1;
         const { i } = this;
-        this._pushContext(true);
-        this.r += `var a${i}=u.a(${this._getValue(block.tag)});`;
+        this._pushC(true);
+        this.r += `var a${i}=u.a(${this._val(b.tag)});`;
         this.r += `if(a${i}){`;
-        if (!block.buffer) {
+        if (!b.buf) {
           this.r += `a(a${i})`;
         } else {
           // const it = block.params.it && stripDoubleQuotes(block.params.it);
-          this.r += `l.$length=a${i}.length;`; // current array length
+          this.r += `l.$length=a${i}.length;`; // cur array length
           this.r += `for(var i${i}=0;i${i}<a${i}.length;i${i}++){`;
           // if (it) {
           //   this.r += `l.${it}=a${i}[i${i}];`;
           // }
           this.r += `l._it=a${i}[i${i}];`;
-          this.r += `l.$idx=i${i};`; // current id
-          this.compileBuffer(block.buffer, true);
+          this.r += `l.$idx=i${i};`; // cur id
+          this.compBuf(b.buf, true);
           this.r += '}';
         }
         this.r += '}';
-        this._else(block);
-        this._popContext(true);
-      // } else if (block.type === '@') {
-      //   // helper
-      //   this.i = this.i + 1;
-      //   const { i } = this;
-      //   this.r += `var h${i}=u.h('${block.tag}',${this._getParams(block.params)},l);`;
-      //   this.r += `if(h${i}){`;
-      //   if (block.buffer) {
-      //     this.compileBuffer(block.buffer);
-      //   } else {
-      //     this.r += `a(h${i});`;
-      //   }
-      //   this.r += '}';
-      //   this._else(block);
-      } else if (!block.type){
+        this._else(b);
+        this._popC(true);
+      } else if (b.type === '@') { // if check
+        this.i = this.i + 1;
+        const { i } = this;
+        // this.r += `var h${i}=u.h('${b.tag}',${this._getParams(b.params)},l);`;
+        this.r += `var h${i}=u.c('${b.method}',${this._val(b.params.key)},${b.params.value},l);`;
+        this.r += `if(h${i}){`;
+        if (b.buf) {
+          this.compBuf(b.buf);
+        } else {
+          this.r += `a(h${i});`;
+        }
+        this.r += '}';
+        this._else(b);
+      } else if (!b.type){
         // default: raw text
-        this.r += `a('${block}');`;
+        this.r += `a('${b}');`;
       }
     });
   }
 
   //
-  compile(buffer) {
-    this.compileBuffer(buffer);
+  compile(buf) {
+    this.compBuf(buf);
     this.r += 'return r;';
     // console.log(this.r);
     return new Function('l', 'u', 'c', 's', this.r);
   }
 
-  _else(block) {
-    if (block.bodies && block.bodies.else) {
+  _else(b) {
+    if (b.bods && b.bods.else) {
       this.r += 'else{';
-      this.compileBuffer(block.bodies.else);
+      this.compBuf(b.bods.else);
       this.r += '}';
     }
   }
 
-  _pushContext(isArray) {
+  _pushC(isArray) {
     const { i } = this;
     this.r += `var ctx${i}={};`;
     // Object.keys(params).forEach(key => {
@@ -634,7 +638,7 @@ class Compiler {
     this.r += `c.ctx.push(ctx${i});`;
   }
 
-  _popContext(isArray) {
+  _popC(isArray) {
     const { i } = this;
     this.r += `var p_ctx${i}=c.ctx.pop();`;
     // Object.keys(params).forEach(key => {
@@ -651,7 +655,7 @@ class Compiler {
   }
 
   //
-  _getValue(tag, utilFn='u.v') {
+  _val(tag, utilFn='u.v') {
 
     if (!isNaN(tag)) {
       return tag;
@@ -664,19 +668,19 @@ class Compiler {
       tag = '_it' + tag;
     }
 
-    const elements = [];
+    const els = [];
     let i, c, sub = false, idx = 0;
     // parse ref
     for (i = 0; i < tag.length; i = 1 + i) {
       c = tag[i];
       if (!sub && (c === '.' || c === '[')) {
         if (i > idx) {
-          elements.push(tag.substring(idx, i));
+          els.push(tag.substring(idx, i));
         }
         idx = i + 1;
         sub = (c === '[');
       } else if (c === ']') {
-        elements.push('[' + this._getValue(tag.substring(idx, i)) + ']');
+        els.push('[' + this._val(tag.substring(idx, i)) + ']');
         sub = false;
         idx = i + 1;
       }
@@ -684,21 +688,21 @@ class Compiler {
 
     // last part
     if (i > idx) {
-      elements.push(tag.substring(idx, i));
+      els.push(tag.substring(idx, i));
     }
 
     // build string
-    let current = 'l', ret = [];
-    elements.forEach((element) => {
-      if (element[0] === '[') {
-        current += element;
+    let cur = 'l', ret = [];
+    els.forEach((el) => {
+      if (el[0] === '[') {
+        cur += el;
       } else {
-        current += '.' + element;
+        cur += '.' + el;
       }
-      ret.push(current);
+      ret.push(cur);
     });
 
-    // use utilFn (u.v by default) to invoke function on last element
+    // use utilFn (u.v by default) to invoke function on last el
     if (ret.length === 1) {
       return `${utilFn}(${ret[0]},null,l)`;
     }
@@ -724,7 +728,7 @@ class Compiler {
   //       // left part
   //       ret.push(`'${param.substring(index, match.index)}'`);
   //       index = match.index + match[0].length;
-  //       ret.push(this._getValue(match[1], 'u.d'));
+  //       ret.push(this._val(match[1], 'u.d'));
   //     }
   //     // final right part
   //     if (index < param.length) {
@@ -741,7 +745,7 @@ class Compiler {
   //   }
 
   //   // ref
-  //   return this._getValue(param);
+  //   return this._val(param);
   // }
 
   // _getParams(params) {
@@ -753,12 +757,12 @@ class Compiler {
   //   return ret;
   // }
 
-  _getReference(block) {
-    let ret = this._getValue(block.tag, 'u.d');
-    if (!block.f) {
+  _getRef(b) {
+    let ret = this._val(b.tag, 'u.d');
+    if (!b.f) {
       return ret;
     }
-    block.f.forEach(f => {
+    b.f.forEach(f => {
       ret = `u.f.${f}(${ret})`;
     });
     return ret;
@@ -768,8 +772,8 @@ class Compiler {
 
 // render template
 // module.exports.render = (src, data, res) => {
-//   const buffer = new Parser().parse(str);
-//   const compiled = new Compiler().compile(buffer);
+//   const buf = new Parser().parse(str);
+//   const compiled = new Compiler().compile(buf);
 //   return this.renderCompiled(compiled, data, res);
 // };
 
@@ -783,5 +787,15 @@ module.exports.renderCompiled = function(compiled, data, res) {
 }
 
 // Helpers and filters
-module.exports.helpers = Helpers;
-module.exports.filters = Utils.f;
+// module.exports.helpers = Helpers;
+// module.exports.filters = Utils.f;
+
+
+var template = `
+  Hello {@if foo == 'bar'}is bar!{:else}not bar{/if}
+`
+
+fn = module.exports.compile(template)
+// console.log('compiled', fn.toString())
+var res = module.exports.renderCompiled(fn, { foo: 'bar' });
+console.log(res)
