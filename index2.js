@@ -1,40 +1,23 @@
-// const config = {
+// var config = {
 //   // cache: false,
 //   // views: './views',
 //   htmlencode: true,
 //   htmltrim: true,
 // }
 
-// const truthTest = (tag, test) => {
-//   return (params, locals) => test(params.key, params.value);
-// };
-
-// const Helpers = {
-//   eq:   truthTest('eq',   (left, right) => left === right ),
-//   ne:   truthTest('ne',   (left, right) => left !== right ),
-//   lt:   truthTest('lt',   (left, right) => Number(left) <   Number(right)),
-//   lte:  truthTest('lte',  (left, right) => Number(left) <=  Number(right)),
-//   gt:   truthTest('gt',   (left, right) => Number(left) >   Number(right)),
-//   gte:  truthTest('gte',  (left, right) => Number(left) >=  Number(right)),
-//   first:  (params, locals) => locals.$idx === 0,
-//   last:   (params, locals) => locals.$length && locals.$length - 1 === locals.$idx,
-//   sep:    (params, locals) => locals.$length && locals.$length - 1 !== locals.$idx,
-//   // select: () => console.log('Error : @select not supported !'),
-// };
-
-const Checks = {
-  '==': function(left, right) { return left === right },
-  '!=': function(left, right) { return left !== right },
-  '<':  function(left, right) { return Number(left) <   Number(right)},
-  '<=': function(left, right) { return Number(left) <=  Number(right)},
-  '>':  function(left, right) { return Number(left) >   Number(right)},
-  '>=': function(left, right) { return Number(left) >=  Number(right)},
+var Checks = {
+  '==': function(a, b) { return a === b },
+  '!=': function(a, b) { return a !== b },
+  '<':  function(a, b) { return Number(a) <   Number(b) },
+  '<=': function(a, b) { return Number(a) <=  Number(b) },
+  '>':  function(a, b) { return Number(a) >   Number(b) },
+  '>=': function(a, b) { return Number(a) >=  Number(b) },
 };
 
 /*
 var Filters = (function() {
 
-  const escapeJs = (s) => {
+  var escapeJs = (s) => {
     if (typeof s === 'string') {
       return s
         .replace(BS, '\\\\')
@@ -51,7 +34,7 @@ var Filters = (function() {
     return s;
   };
 
-  const stringifyJson = (o) => {
+  var stringifyJson = (o) => {
     return o && JSON.stringify(o)
       .replace(LS, '\\u2028')
       .replace(PS, '\\u2029')
@@ -73,30 +56,26 @@ var Filters = (function() {
 */
 
 // special chars
-const HCHARS  = /[&<>"']/,
-      AMP     = /&/g,
-      LT      = /</g,
-      GT      = />/g,
-      QUOT    = /"/g,
-      SQUOT   = /'/g;
+var HCHARS = /[&<>"']/;
 
-const htmlencode = (s)=> {
+var htmlencode = (s)=> {
   if (!s || !s.replace || !HCHARS.test(s)) {
     return s;
   }
   return s
-    .replace(AMP,'&amp;')
-    .replace(LT,'&lt;')
-    .replace(GT,'&gt;')
-    .replace(QUOT,'&quot;')
-    .replace(SQUOT, '&#39;');
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g, '&#39;');
 };
 
 
 var Utils = {
   f: {
     h: htmlencode,
-    slug(str) { return str.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') }
+    t: function(key, data) { return data._strings && data._strings[key] || key },
+    slug: function(str) { return str.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') },
     // upper: function(s) { return s.toUpperCase() },
     // lower: function(s) { return s.toLowerCase() },
   }, // filters
@@ -154,20 +133,20 @@ var Utils = {
 
 // remove spaces and double quotes
 // function cleanStr(s) {
-//   const regexp = /["]*(.[^"]*)/;
-//   const match  = regexp.exec(s);
+//   var regexp = /["]*(.[^"]*)/;
+//   var match  = regexp.exec(s);
 //   return match && match[1];
 // };
 
 // remove spaces and double quotes
 // function stripDoubleQuotes(s) {
-//   const regexp = new RegExp('"', 'sg');
+//   var regexp = new RegExp('"', 'sg');
 //   return s.replace(regexp, '');
 // };
 
 //
 function getTagName(s) {
-  const i = s.indexOf(' ');
+  var i = s.indexOf(' ');
   if (i >= 0) {
     s = s.substring(0, i);
   }
@@ -175,11 +154,11 @@ function getTagName(s) {
 };
 
 // function removeComments(str) {
-//   let index = 0;
-//   let openCommentMatch, closeCommentMatch;
+//   var index = 0;
+//   var openCommentMatch, closeCommentMatch;
 
-//   const openCommentRegexp   = new RegExp('{!', 'msg');
-//   const closeCommentRegexp  = new RegExp('!}', 'msg');
+//   var openCommentRegexp   = new RegExp('{!', 'msg');
+//   var closeCommentRegexp  = new RegExp('!}', 'msg');
 
 //   // find opening '{!'
 //   while ((openCommentMatch = openCommentRegexp.exec(str)) !== null) {
@@ -197,15 +176,15 @@ function getTagName(s) {
 
 /*
 
-const FORBIDDEN_FIRST_CHARS = [ '\'', '{', '[' ];
+var FORBIDDEN_FIRST_CHARS = [ '\'', '{', '[' ];
 
 function parseParams(s) {
-  const params    = {};
-  const original  = s
-  let match;
+  var params    = {};
+  var original  = s
+  var match;
 
   // string param
-  const stringParam = new RegExp('(\\w+)=("[^"]*")', 'msg');
+  var stringParam = new RegExp('(\\w+)=("[^"]*")', 'msg');
   while ((match = stringParam.exec(s)) !== null) {
     params[match[1]] = match[2];
     s = s.substring(0, match.index) + s.substring(stringParam.lastIndex);
@@ -213,7 +192,7 @@ function parseParams(s) {
   }
 
   // ref param
-  const refParam = new RegExp('(\\w+)=([^" \n\r]+)', 'msg');
+  var refParam = new RegExp('(\\w+)=([^" \n\r]+)', 'msg');
   while ((match = refParam.exec(s)) !== null) {
     if (FORBIDDEN_FIRST_CHARS.indexOf(match[2][0]) >= 0) {
       throw new Error(`Unexpected character "${match[2][0]}" in tag {${original}...`);
@@ -224,7 +203,7 @@ function parseParams(s) {
   }
 
   // unnamed string param
-  const unnamedStringParam = new RegExp('[^=] ?("[^"]*")', 'msg');
+  var unnamedStringParam = new RegExp('[^=] ?("[^"]*")', 'msg');
   if ((match = unnamedStringParam.exec(s)) !== null) {
     params.$ = match[1];
   }
@@ -297,8 +276,8 @@ class Parser {
     // escape single quotes
     str = str.replace(/'/g, '\\\'');
 
-    const i     = this.buf.length - 1;
-    const last  = this.buf[i];
+    var i     = this.buf.length - 1;
+    var last  = this.buf[i];
 
     // concat with previous string buf
     if (typeof last === 'string') {
@@ -328,14 +307,14 @@ class Parser {
   }
 
   pop() {
-    const b = this.stack.pop();
-    const last = this.lastB();
+    var b = this.stack.pop();
+    var last = this.lastB();
     this.buf = last && last.cur || this.global;
     return b;
   }
 
   addBody(tag) {
-    const last = this.lastB();
+    var last = this.lastB();
     if (!last) {
       throw new Error('no block, cannot add body');
     }
@@ -354,15 +333,15 @@ class Parser {
 
     // remove comments
     // str = removeComments(str);
+    var dd = (opts || {}).delimeters || ['{', '}'];
+    var regA  = new RegExp('(.*?)\\' + dd[0], 'msg');
+    var regB  = new RegExp('(.*?)\\' + dd[1], 'msg');
 
-    var regStart  = new RegExp('(.*?)\\{', 'msg');
-    var regClose  = new RegExp('(.*?)\\}', 'msg');
-
-    let index = 0;
+    var index = 0;
 
     // find opening '{'
-    let openM, closeM;
-    while ((openM = regStart.exec(str)) !== null) {
+    var openM, closeM;
+    while ((openM = regA.exec(str)) !== null) {
       if (openM[1]) {
         // preceding string
         this.pushStr(openM[1]);
@@ -370,24 +349,23 @@ class Parser {
       index = openM.index + openM[0].length;
 
       // find closing '}'
-      let tag = '';
-      regClose.lastIndex = index;
-      while ((closeM = regClose.exec(str)) !== null) {
+      var tag = '';
+      regB.lastIndex = index;
+      while ((closeM = regB.exec(str)) !== null) {
         tag += closeM[1];
         // skip when closing an internal '{'
-        if (closeM[1].lastIndexOf('{') === -1) {
+        if (closeM[1].lastIndexOf(dd[0]) === -1) {
           break;
         }
-        tag += '}';
+        tag += dd[1];
       }
 
-      if (!closeM) {
-        // parsing error
-        throw new Error(`Missing closing "}" at idx ${index}`);
+      if (!closeM) { // parsing error
+        throw new Error(`No ${dd[1]} at idx ${index}`);
       }
 
       index = closeM.index + closeM[0].length;
-      regStart.lastIndex = index;
+      regA.lastIndex = index;
 
       if (!this.parseTag(tag)) {
         // tag is ignored: push content to buf
@@ -411,9 +389,9 @@ class Parser {
 
   // parse tag. returns true if tag was found
   parseTag(str) {
-    const tag = Tags[str[0]];
+    var tag = Tags[str[0]];
 
-    const b = {
+    var b = {
       type: str[0],
       tag:  str,
     };
@@ -434,7 +412,7 @@ class Parser {
     b.tag = getTagName(str);
 
     if (b.type == '@') {
-      var matches = str.match(/if (.+)\s?(==|>=|<=|<|>)\s?(.+)/);
+      var matches = str.match(/if (.+)\s?(==|!=|<|>|<=|>=)\s?(.+)/);
       if (!matches) return false; // no match method found
 
       b.method = matches[2];
@@ -455,12 +433,11 @@ class Parser {
   // parse filters
   parseF(str, b) {
     var regexp = new RegExp('([ ]*\\|[ ]*\\w+)+', 'g');
-    var match  = regexp.exec(str);
-    if (match) {
-      b.tag = str.substring(0, match.index);
-      const f = match[0].replace(/ /g, '').substring(1).split('|');
-      console.log(f)
-      const s = f.indexOf('raw');
+    var m = regexp.exec(str);
+    if (m) {
+      b.tag = str.substring(0, m.index);
+      var f = m[0].replace(/ /g, '').substring(1).split('|');
+      var s = f.indexOf('raw');
       if (s > -1) {
         f.splice(s, 1);
       } else {
@@ -493,15 +470,15 @@ class Cache {
 
     filePath = FileUtils.getFilePath(filePath);
 
-    let compiled = this.get(filePath);
+    var compiled = this.get(filePath);
     if (config.cache && compiled) {
       // console.log('igo-dust cache hit: ' + filePath);
       return compiled;
     }
 
     // load, parse & compile
-    const src       = FileUtils.loadFile(filePath);
-    const buf    = new Parser().parse(src);
+    var src       = FileUtils.loadFile(filePath);
+    var buf    = new Parser().parse(src);
     compiled        = new Compiler().compile(buf);
 
     // console.log(compiled.toString())
@@ -513,7 +490,7 @@ class Cache {
   }
 };
 
-const Cache = new Cache();
+var Cache = new Cache();
 */
 
 class Compiler {
@@ -554,7 +531,7 @@ class Compiler {
       //   }
       } else if (b.type === '?' || b.type === '!' ) {
         // conditional block
-        const not = b.type === '!' ? '!' : '';
+        var not = b.type === '!' ? '!' : '';
         this._pushC();
         this.r += `if(${not}u.b(${this._val(b.tag)})){`;
         this.compBuf(b.buf);
@@ -564,14 +541,14 @@ class Compiler {
       } else if (b.type === '#') {
         // loop block
         this.i = this.i + 1;
-        const { i } = this;
+        var { i } = this;
         this._pushC(true);
         this.r += `var a${i}=u.a(${this._val(b.tag)});`;
         this.r += `if(a${i}){`;
         if (!b.buf) {
           this.r += `a(a${i})`;
         } else {
-          // const it = block.params.it && stripDoubleQuotes(block.params.it);
+          // var it = block.params.it && stripDoubleQuotes(block.params.it);
           this.r += `l.$length=a${i}.length;`; // cur array length
           this.r += `for(var i${i}=0;i${i}<a${i}.length;i${i}++){`;
           // if (it) {
@@ -587,7 +564,7 @@ class Compiler {
         this._popC(true);
       } else if (b.type === '@') { // if check
         this.i = this.i + 1;
-        const { i } = this;
+        var { i } = this;
         // this.r += `var h${i}=u.h('${b.tag}',${this._getParams(b.params)},l);`;
         this.r += `var h${i}=u.c('${b.method}',${this._val(b.params.key)},${b.params.value},l);`;
         this.r += `if(h${i}){`;
@@ -622,7 +599,7 @@ class Compiler {
   }
 
   _pushC(isArray) {
-    const { i } = this;
+    var { i } = this;
     this.r += `var ctx${i}={};`;
     // Object.keys(params).forEach(key => {
     //   if (key === '$') {
@@ -641,7 +618,7 @@ class Compiler {
   }
 
   _popC(isArray) {
-    const { i } = this;
+    var { i } = this;
     this.r += `var p_ctx${i}=c.ctx.pop();`;
     // Object.keys(params).forEach(key => {
     //   if (key === '$') {
@@ -670,8 +647,8 @@ class Compiler {
       tag = '_it' + tag;
     }
 
-    const els = [];
-    let i, c, sub = false, idx = 0;
+    var els = [];
+    var i, c, sub = false, idx = 0;
     // parse ref
     for (i = 0; i < tag.length; i = 1 + i) {
       c = tag[i];
@@ -694,7 +671,7 @@ class Compiler {
     }
 
     // build string
-    let cur = 'l', ret = [];
+    var cur = 'l', ret = [];
     els.forEach((el) => {
       if (el[0] === '[') {
         cur += el;
@@ -708,7 +685,7 @@ class Compiler {
     if (ret.length === 1) {
       return `${utilFn}(${ret[0]},null,l)`;
     }
-    const _this = ret.slice(0,-1);
+    var _this = ret.slice(0,-1);
     return `${utilFn}(${ret.join('&&')},${_this.join('&&')},l)`;
 
   }
@@ -716,7 +693,7 @@ class Compiler {
   // _getParam(param) {
   //   if (param[0] === '"') {
   //     // string
-  //     let ret = [], match, index = 0, s;
+  //     var ret = [], match, index = 0, s;
 
   //     param = stripDoubleQuotes(param);
   //     if (!param) {
@@ -725,7 +702,7 @@ class Compiler {
   //     }
 
   //     // replace references in string
-  //     const ref = new RegExp('\\{([^\\}]*)\\}', 'msg');
+  //     var ref = new RegExp('\\{([^\\}]*)\\}', 'msg');
   //     while ((match = ref.exec(param)) !== null) {
   //       // left part
   //       ret.push(`'${param.substring(index, match.index)}'`);
@@ -751,8 +728,8 @@ class Compiler {
   // }
 
   // _getParams(params) {
-  //   let ret = '{';
-  //   for (let key in params) {
+  //   var ret = '{';
+  //   for (var key in params) {
   //     ret += `${key}:${this._getParam(params[key])},`;
   //   }
   //   ret += '}';
@@ -760,28 +737,24 @@ class Compiler {
   // }
 
   _getRef(b) {
-    let ret = this._val(b.tag, 'u.d');
-    if (!b.f) {
-      return ret;
-    }
-    b.f.forEach(f => {
-      ret = `u.f.${f}(${ret})`;
-    });
-    return ret;
+    var r = this._val(b.tag, 'u.d');
+    if (!b.f) return r;
+    b.f.forEach(function(f) { r = `u.f.${f}(${r},l)` });
+    return r;
   }
 
 }
 
 // render template
 // module.exports.render = (src, data, res) => {
-//   const buf = new Parser().parse(str);
-//   const compiled = new Compiler().compile(buf);
+//   var buf = new Parser().parse(str);
+//   var compiled = new Compiler().compile(buf);
 //   return this.renderCompiled(compiled, data, res);
 // };
 
 // render template file
-module.exports.compile = (src) => {
-  return new Compiler().compile(new Parser().parse(src));
+module.exports.compile = function(src, opts) {
+  return new Compiler().compile(new Parser().parse(src, opts));
 };
 
 module.exports.renderCompiled = function(compiled, data, res) {
@@ -791,9 +764,10 @@ module.exports.renderCompiled = function(compiled, data, res) {
 var template = `
   Hello {@if foo == 'bar'}is bar!{:else}not bar {/}
   {html|raw}
+  aaa {some_key|t} bbb
 `
 
 fn = module.exports.compile(template)
 // console.log('compiled', fn.toString())
-var res = module.exports.renderCompiled(fn, { foo: 'bar', html: '<script>asdas</script>' });
+var res = module.exports.renderCompiled(fn, { foo: 'bar', html: '<script>asdas</script>', some_key: 'aaa.foo', _strings: { 'aaa.foo': 'AA Foo!' } });
 console.log(res)
