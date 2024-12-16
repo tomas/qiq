@@ -57,25 +57,23 @@ var Filters = (function() {
 
 // special chars
 var HCHARS = /[&<>"']/;
-
-var htmlencode = (s)=> {
-  if (!s || !s.replace || !HCHARS.test(s)) {
-    return s;
-  }
-  return s
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g, '&#39;');
-};
-
+var TAGS = /[?!#@:\/]/;
 
 var Utils = {
   f: {
-    h: htmlencode,
-    t: function(key, data) { return data._strings && data._strings[key] || key },
+    h: function(s) {
+      if (!s || !s.replace || !HCHARS.test(s))
+        return s;
+
+      return s
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g, '&#39;');
+    },
     slug: function(str) { return str.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') },
+    t: function(key, data) { return data._strings && data._strings[key] || key },
     // upper: function(s) { return s.toUpperCase() },
     // lower: function(s) { return s.toLowerCase() },
   }, // filters
@@ -88,26 +86,14 @@ var Utils = {
   // return array
   a: function(v) {
     if (Array.isArray(v)) {
-      if (v.length === 0) {
-        return null;
-      }
-      return v;
+      return (v.length === 0) ? null : v;
     }
-    if (v) {
-      return [v];
-    }
-    return null;
+    return v ? [v] : null;
   },
 
   // return boolean
   b: function(v) {
-    if (!v) {
-      return false;
-    }
-    if (v.length === 0) {
-      return false;
-    }
-    return true;
+    return (!v || v.length == 0) ? false : true;
   },
 
   // return value (if it's a function, invoke it with locals)
@@ -123,12 +109,9 @@ var Utils = {
     if (typeof s === 'function') {
       return s.call(t, l);
     }
-    if (s === null || s === undefined) {
-      return '';
-    }
-    return s;
-  },
 
+    return (s === null || s === undefined) ? '' : s;
+  }
 };
 
 // remove spaces and double quotes
@@ -145,13 +128,7 @@ var Utils = {
 // };
 
 //
-function getTagName(s) {
-  var i = s.indexOf(' ');
-  if (i >= 0) {
-    s = s.substring(0, i);
-  }
-  return s.substring(1);
-};
+
 
 // function removeComments(str) {
 //   var index = 0;
@@ -213,59 +190,15 @@ function parseParams(s) {
 */
 
 
-var Tags = {
+function parseTemplate(src, opts) {
 
-  // if
-  '?': function(p, b) {
-    p.putB(b);
-    p.stackB(b);
-  },
-
-  // not
-  '!': function(p, b) {
-    p.putB(b);
-    p.stackB(b);
-  },
-
-  // loop
-  '#': function(p, b) {
-    p.putB(b);
-    p.stackB(b);
-  },
-
-  // if
-  '@': function(p, b) {
-    p.putB(b);
-    p.stackB(b);
-  },
-
-  // body
-  ':': function(p, b) {
-    if (b.tag != 'else')
-      throw new Error(`wrong tag {${b.type}${b.tag}`)
-    p.addBody(b.tag);
-  },
-
-  // end
-  '/': function(p, b) {
-    var o = p.pop();
-    if (o && b.tag && o.tag !== b.tag)  {
-      console.error(`tag mismatch: ${o.tag} vs ${b.tag}`);
-    }
-  },
-}
-
-class Parser {
-
-  constructor() {
-    this.global     = [];           // global buf, to be returned by parse function
-    this.buf        = this.global;     // cur buf, where content is added
-    this.stack      = [];           // stack of parents blocks
-    this.contents   = {};           // contents to be replaced in layouts
-  }
+  var main       = [];    // global buf, to be returned by parse function
+  var buf        = main;  // cur buf, where content is added
+  var stack      = [];    // stack of parents blocks
+  var contents   = {};    // contents to be replaced in layouts
 
   // add string
-  pushStr(str) {
+  function pushStr(str) {
     // if (config.htmltrim) {
     //   // remove line returns and following spaces
     //   str = str.replace(/[\r\n]+\s*/g , '');
@@ -276,135 +209,77 @@ class Parser {
     // escape single quotes
     str = str.replace(/'/g, '\\\'');
 
-    var i     = this.buf.length - 1;
-    var last  = this.buf[i];
+    var i     = buf.length - 1;
+    var last  = buf[i];
 
     // concat with previous string buf
     if (typeof last === 'string') {
-      this.buf[i] = last + str;
+      buf[i] = last + str;
       return;
     }
 
     // push
-    this.buf.push(str);
+    buf.push(str);
   }
 
   // push block
-  putB(b) {
-    this.buf.push(b);
+  function putB(b) {
+    buf.push(b);
   }
 
   // stack the block, use its buf as cur
-  stackB(b)  {
+  function stackB(b)  {
     b.buf  = [];
     b.cur = b.buf;
-    this.buf   = b.buf;
-    this.stack.push(b);
+    buf   = b.buf;
+    stack.push(b);
   }
 
-  lastB() {
-    return this.stack[this.stack.length-1];
+  function lastB() {
+    return stack[stack.length-1];
   }
 
-  pop() {
-    var b = this.stack.pop();
-    var last = this.lastB();
-    this.buf = last && last.cur || this.global;
+  function pop() {
+    var b = stack.pop();
+    var last = lastB();
+    buf = last && last.cur || main;
     return b;
   }
 
-  addBody(tag) {
-    var last = this.lastB();
+  function addBody(tag) {
+    var last = lastB();
     if (!last) {
       throw new Error('no block, cannot add body');
     }
     last.bods       = last.bods || {};
     last.bods[tag]  = [];
-    this.buf = last.cur = last.bods[tag];
+    buf = last.cur = last.bods[tag];
   }
 
-  parse(str, opts) {
-    // remove spaces at the beginning of lines and line breaks
-    // if (config.htmltrim) {
-    //   str = str.replace(/^\s+/g, '');
-    // } else {``
-      str = str.replace(/\r/g , '\\r').replace(/\n/g , '\\n');
-    // }
-
-    // remove comments
-    // str = removeComments(str);
-    var dd = (opts || {}).delimeters || ['{', '}'];
-    var regA  = new RegExp('(.*?)\\' + dd[0], 'msg');
-    var regB  = new RegExp('(.*?)\\' + dd[1], 'msg');
-
-    var index = 0;
-
-    // find opening '{'
-    var openM, closeM;
-    while ((openM = regA.exec(str)) !== null) {
-      if (openM[1]) {
-        // preceding string
-        this.pushStr(openM[1]);
-      }
-      index = openM.index + openM[0].length;
-
-      // find closing '}'
-      var tag = '';
-      regB.lastIndex = index;
-      while ((closeM = regB.exec(str)) !== null) {
-        tag += closeM[1];
-        // skip when closing an internal '{'
-        if (closeM[1].lastIndexOf(dd[0]) === -1) {
-          break;
-        }
-        tag += dd[1];
-      }
-
-      if (!closeM) { // parsing error
-        throw new Error(`No ${dd[1]} at idx ${index}`);
-      }
-
-      index = closeM.index + closeM[0].length;
-      regA.lastIndex = index;
-
-      if (!this.parseTag(tag)) {
-        // tag is ignored: push content to buf
-        this.pushStr(`{${tag}}`);
-      }
+  function getTagName(s) {
+    var i = s.indexOf(' ');
+    if (i >= 0) {
+      s = s.substring(0, i);
     }
-
-    // stack should be empty
-    if (this.stack.length > 0) {
-      throw new Error(`Missing closing tag for {${this.stack[0].type}${this.stack[0].tag}`);
-    }
-
-    if (index < str.length) {
-      this.pushStr(str.slice(index));
-    }
-
-    // console.log('--- done ---');
-    // console.dir(this);
-    return this.global;
-  }
+    return s.substring(1);
+  };
 
   // parse tag. returns true if tag was found
-  parseTag(str) {
-    var tag = Tags[str[0]];
-
+  function parseTag(str) {
     var b = {
       type: str[0],
       tag:  str,
     };
 
-    if (!tag) {
+    if (!TAGS.test(b.type)) {
       // skip this tag if it's not correct
       if (str.indexOf(' ') >= 0 || str.indexOf('(') >= 0 || str.indexOf(';') >= 0) {
         return false;
       }
       // reference
       b.type = 'r';
-      this.parseF(str, b);
-      this.putB(b);
+      parseF(str, b);
+      putB(b);
       return true;
     }
 
@@ -412,7 +287,7 @@ class Parser {
     b.tag = getTagName(str);
 
     if (b.type == '@') {
-      var matches = str.match(/if (.+)\s?(==|!=|<|>|<=|>=)\s?(.+)/);
+      var matches = str.match(/if (.+)\s?(==|!=|<|>|<=|>=?)\s?(.+)/);
       if (!matches) return false; // no match method found
 
       b.method = matches[2];
@@ -424,14 +299,58 @@ class Parser {
     // b.params = parseParams(str);
     // b.params = {};
 
-    // invoke tag function
-    tag(this, b);
+    switch (b.type) {
+      // if
+      case '?': {
+        putB(b);
+        stackB(b);
+        break;
+      }
+
+      // not
+      case '!': {
+        putB(b);
+        stackB(b);
+        break;
+      }
+
+      // loop
+      case '#': {
+        putB(b);
+        stackB(b);
+        break;
+      }
+
+      // if
+      case '@': {
+        putB(b);
+        stackB(b);
+        break;
+      }
+
+      // body
+      case ':': {
+        if (b.tag != 'else')
+          throw new Error(`wrong tag {${b.type}${b.tag}`)
+        addBody(b.tag);
+        break;
+      }
+
+      // end
+      case '/': {
+        var o = pop();
+        if (o && b.tag && o.tag !== b.tag)  {
+          console.error(`tag mismatch: ${o.tag} vs ${b.tag}`);
+        }
+        break;
+      }
+    }
 
     return true;
   }
 
   // parse filters
-  parseF(str, b) {
+  function parseF(str, b) {
     var regexp = new RegExp('([ ]*\\|[ ]*\\w+)+', 'g');
     var m = regexp.exec(str);
     if (m) {
@@ -449,193 +368,199 @@ class Parser {
     }
   }
 
+  return function() {
+
+    // remove spaces at the beginning of lines and line breaks
+    // if (config.htmltrim) {
+    //   str = str.replace(/^\s+/g, '');
+    // } else {``
+      src = src.replace(/\r/g , '\\r').replace(/\n/g , '\\n');
+    // }
+
+    // remove comments
+    // src = removeComments(src);
+    var dd = (opts || {}).delimeters || ['{', '}'],
+        regA  = new RegExp('(.*?)\\' + dd[0], 'msg'),
+        regB  = new RegExp('(.*?)\\' + dd[1], 'msg'),
+        index = 0;
+
+    // find opening '{'
+    var openM, closeM;
+    while ((openM = regA.exec(src)) !== null) {
+      if (openM[1]) {
+        // preceding string
+        pushStr(openM[1]);
+      }
+      index = openM.index + openM[0].length;
+
+      // find closing '}'
+      var tag = '';
+      regB.lastIndex = index;
+      while ((closeM = regB.exec(src)) !== null) {
+        tag += closeM[1];
+        // skip when closing an internal '{'
+        if (closeM[1].lastIndexOf(dd[0]) === -1) {
+          break;
+        }
+        tag += dd[1];
+      }
+
+      if (!closeM) { // parsing error
+        throw new Error(`No ${dd[1]} at idx ${index}`);
+      }
+
+      index = closeM.index + closeM[0].length;
+      regA.lastIndex = index;
+
+      if (!parseTag(tag)) {
+        // console.log('tag is ignored')
+        // tag is ignored: push content to buf
+        pushStr(`{${tag}}`);
+      }
+    }
+
+    // stack should be empty
+    if (stack.length > 0) {
+      throw new Error(`Missing closing tag for {${stack[0].type}${stack[0].tag}`);
+    }
+
+    if (index < src.length) {
+      pushStr(src.slice(index));
+    }
+
+    return main;
+  }()
 }
 
-/*
-class Cache {
+function compileTemplate(src) {
 
-  constructor() {
-    this._CACHE = {};
-  }
-
-  get(key) {
-    return this._CACHE[key];
-  }
-
-  put(key, value) {
-    this._CACHE[key] = value;
-  }
-
-  getCompiled(filePath) {
-
-    filePath = FileUtils.getFilePath(filePath);
-
-    var compiled = this.get(filePath);
-    if (config.cache && compiled) {
-      // console.log('igo-dust cache hit: ' + filePath);
-      return compiled;
-    }
-
-    // load, parse & compile
-    var src       = FileUtils.loadFile(filePath);
-    var buf    = new Parser().parse(src);
-    compiled        = new Compiler().compile(buf);
-
-    // console.log(compiled.toString())
-
-    if (config.cache && compiled) {
-      this.put(filePath, compiled);
-    }
-    return compiled;
-  }
-};
-
-var Cache = new Cache();
-*/
-
-class Compiler {
-
-  constructor() {
-    this.i  =   0;
-    this.r  = `var r='',l=l||{},c=c||{ctx:[]};`;
-    this.r += 'var a=s?function(x){s.write(String(x))}:function(x){r+=x};';
-  }
+  var i = 0,
+      r = 'var r="",l=l||{},c=c||{ctx:[]};var a=s?function(x){s.write(String(x))}:function(x){r+=x};';
 
   // compile buffer
-  compBuf(buf) {
+  function compBuf(buf) {
     // precompile, for content functions
-    // buf.forEach(block => {
-    //   if (block.type === '<') {
-    //     this.r += `c._${block.tag}=function(){var r='';`;
-    //     this.r += 'var a=s?function(x){s.write(String(x))}:function(x){r+=x};';
-    //     this.compBuf(block.buf);
-    //     this.r += 'return r;};';
+    // buf.forEach(b => {
+    //   if (b.type === '<') {
+    //     r += `c._${b.tag}=function(){var r='';`;
+    //     r += 'var a=s?function(x){s.write(String(x))}:function(x){r+=x};';
+    //     compBuf(b.buf);
+    //     r += 'return r;};';
     //   }
     // });
 
-    //
     buf.forEach(b => {
       if (b.type === 'r') {
         // reference
-        this.r += `a(${this._getRef(b)});`;
+        r += `a(${_getRef(b)});`;
       // } else if (block.type === '+' && !b.tag) {
       //   // insert body (invoke content function)
-      //   this.r += `if(c._$body){a(c._$body());c._$body=null;}`;
+      //   r += `if(c._$body){a(c._$body());c._$body=null;}`;
       // } else if (block.type === '+') {
       //   // insert content (invoke content function)
-      //   this.r += `if(c._${block.tag}){a(c._${block.tag}())}`;
+      //   r += `if(c._${block.tag}){a(c._${block.tag}())}`;
       //   if (block.buf) {
-      //     this.r += 'else{';
-      //     this.compBuf(block.buf);
-      //     this.r += '}';
+      //     r += 'else{';
+      //     compBuf(block.buf);
+      //     r += '}';
       //   }
       } else if (b.type === '?' || b.type === '!' ) {
         // conditional block
         var not = b.type === '!' ? '!' : '';
-        this._pushC();
-        this.r += `if(${not}u.b(${this._val(b.tag)})){`;
-        this.compBuf(b.buf);
-        this.r += '}';
-        this._else(b);
-        this._popC();
+        _pushC();
+        r += `if(${not}u.b(${_val(b.tag)})){`;
+        compBuf(b.buf);
+        r += '}';
+        _else(b);
+        _popC();
       } else if (b.type === '#') {
         // loop block
-        this.i = this.i + 1;
-        var { i } = this;
-        this._pushC(true);
-        this.r += `var a${i}=u.a(${this._val(b.tag)});`;
-        this.r += `if(a${i}){`;
+        i++;
+        var e = i;
+        _pushC(true);
+        r += `var a${e}=u.a(${_val(b.tag)});`;
+        r += `if(a${e}){`;
         if (!b.buf) {
-          this.r += `a(a${i})`;
+          r += `a(a${e})`;
         } else {
           // var it = block.params.it && stripDoubleQuotes(block.params.it);
-          this.r += `l.$length=a${i}.length;`; // cur array length
-          this.r += `for(var i${i}=0;i${i}<a${i}.length;i${i}++){`;
+          r += `l.$length=a${e}.length;`; // cur array length
+          r += `for(var i${e}=0;i${e}<a${e}.length;i${e}++){`;
           // if (it) {
-          //   this.r += `l.${it}=a${i}[i${i}];`;
+          //   r += `l.${it}=a${e}[i${e}];`;
           // }
-          this.r += `l._it=a${i}[i${i}];`;
-          this.r += `l.$idx=i${i};`; // cur id
-          this.compBuf(b.buf, true);
-          this.r += '}';
+          r += `l._it=a${e}[i${e}];`;
+          r += `l.$idx=i${e};`; // cur id
+          compBuf(b.buf, true);
+          r += '}';
         }
-        this.r += '}';
-        this._else(b);
-        this._popC(true);
+        r += '}';
+        _else(b);
+        _popC(true);
       } else if (b.type === '@') { // if check
-        this.i = this.i + 1;
-        var { i } = this;
-        // this.r += `var h${i}=u.h('${b.tag}',${this._getParams(b.params)},l);`;
-        this.r += `var h${i}=u.c('${b.method}',${this._val(b.params.key)},${b.params.value},l);`;
-        this.r += `if(h${i}){`;
+        i++;
+        var e = i;
+        // r += `var h${e}=u.h('${b.tag}',${_getParams(b.params)},l);`;
+        r += `var h${e}=u.c('${b.method}',${_val(b.params.key)},${b.params.value},l);`;
+        r += `if(h${e}){`;
         if (b.buf) {
-          this.compBuf(b.buf);
+          compBuf(b.buf);
         } else {
-          this.r += `a(h${i});`;
+          r += `a(h${e});`;
         }
-        this.r += '}';
-        this._else(b);
+        r += '}';
+        _else(b);
       } else if (!b.type){
         // default: raw text
-        this.r += `a('${b}');`;
+        r += `a('${b}');`;
       }
     });
   }
 
-  //
-  compile(buf) {
-    this.compBuf(buf);
-    this.r += 'return r;';
-    // console.log(this.r);
-    return new Function('l', 'u', 'c', 's', this.r);
-  }
-
-  _else(b) {
+  function _else(b) {
     if (b.bods && b.bods.else) {
-      this.r += 'else{';
-      this.compBuf(b.bods.else);
-      this.r += '}';
+      r += 'else{';
+      compBuf(b.bods.else);
+      r += '}';
     }
   }
 
-  _pushC(isArray) {
-    var { i } = this;
-    this.r += `var ctx${i}={};`;
+  function _pushC(isArray) {
+    var e = i;
+    r += `var ctx${e}={};`;
     // Object.keys(params).forEach(key => {
     //   if (key === '$') {
     //     return;
     //   }
-    //   this.r += `ctx${i}.${key}=l.${key};`;
-    //   this.r += `l.${key}=${this._getParam(params[key])};`;
+    //   r += `ctx${e}.${key}=l.${key};`;
+    //   r += `l.${key}=${_getParam(params[key])};`;
     // });
     if (isArray) {
-      this.r += `ctx${i}._it=l._it;`;
-      this.r += `ctx${i}.idx=l.$idx;`;
-      // this.r += `ctx${i}.length=l.$length;`;
+      r += `ctx${e}._it=l._it;`;
+      r += `ctx${e}.idx=l.$idx;`;
+      // r += `ctx${e}.length=l.$length;`;
     }
 
-    this.r += `c.ctx.push(ctx${i});`;
+    r += `c.ctx.push(ctx${e});`;
   }
 
-  _popC(isArray) {
-    var { i } = this;
-    this.r += `var p_ctx${i}=c.ctx.pop();`;
+  function _popC(isArray) {
+    var e = i;
+    r += `var p_ctx${e}=c.ctx.pop();`;
     // Object.keys(params).forEach(key => {
     //   if (key === '$') {
     //     return;
     //   }
-    //   this.r += `l.${key}=p_ctx${i}.${key};`;
+    //   r += `l.${key}=p_ctx${e}.${key};`;
     // });
     if (isArray) {
-      this.r += `l._it=p_ctx${i}._it;`;
-      this.r += `l.$idx=p_ctx${i}.idx;`;
-      // this.r += `l.$length=p_ctx${i}.length;`;
+      r += `l._it=p_ctx${e}._it;`;
+      r += `l.$idx=p_ctx${e}.idx;`;
+      // r += `l.$length=p_ctx${e}.length;`;
     }
   }
 
-  //
-  _val(tag, utilFn='u.v') {
-
+  function _val(tag, utilFn='u.v') {
     if (!isNaN(tag)) {
       return tag;
     }
@@ -659,7 +584,7 @@ class Compiler {
         idx = i + 1;
         sub = (c === '[');
       } else if (c === ']') {
-        els.push('[' + this._val(tag.substring(idx, i)) + ']');
+        els.push('[' + _val(tag.substring(idx, i)) + ']');
         sub = false;
         idx = i + 1;
       }
@@ -672,7 +597,7 @@ class Compiler {
 
     // build string
     var cur = 'l', ret = [];
-    els.forEach((el) => {
+    els.forEach(function(el) {
       if (el[0] === '[') {
         cur += el;
       } else {
@@ -685,64 +610,21 @@ class Compiler {
     if (ret.length === 1) {
       return `${utilFn}(${ret[0]},null,l)`;
     }
-    var _this = ret.slice(0,-1);
-    return `${utilFn}(${ret.join('&&')},${_this.join('&&')},l)`;
 
+    var arr = ret.slice(0,-1);
+    return `${utilFn}(${ret.join('&&')},${arr.join('&&')},l)`;
   }
 
-  // _getParam(param) {
-  //   if (param[0] === '"') {
-  //     // string
-  //     var ret = [], match, index = 0, s;
-
-  //     param = stripDoubleQuotes(param);
-  //     if (!param) {
-  //       // empty string
-  //       return '\'\'';
-  //     }
-
-  //     // replace references in string
-  //     var ref = new RegExp('\\{([^\\}]*)\\}', 'msg');
-  //     while ((match = ref.exec(param)) !== null) {
-  //       // left part
-  //       ret.push(`'${param.substring(index, match.index)}'`);
-  //       index = match.index + match[0].length;
-  //       ret.push(this._val(match[1], 'u.d'));
-  //     }
-  //     // final right part
-  //     if (index < param.length) {
-  //       s = param.substring(index, param.length);
-  //       // escape single quotes
-  //       s = s.replace(/'/g, '\\\'');
-  //       ret.push(`'${s}'`);
-  //     }
-  //     return ret.join('+');
-  //   }
-
-  //   if (!isNaN(param)) {
-  //     return param;
-  //   }
-
-  //   // ref
-  //   return this._val(param);
-  // }
-
-  // _getParams(params) {
-  //   var ret = '{';
-  //   for (var key in params) {
-  //     ret += `${key}:${this._getParam(params[key])},`;
-  //   }
-  //   ret += '}';
-  //   return ret;
-  // }
-
-  _getRef(b) {
-    var r = this._val(b.tag, 'u.d');
-    if (!b.f) return r;
-    b.f.forEach(function(f) { r = `u.f.${f}(${r},l)` });
-    return r;
+  function _getRef(b) {
+    var o = _val(b.tag, 'u.d');
+    if (!b.f) return o;
+    b.f.forEach(function(f) { o = `u.f.${f}(${o},l,c)` });
+    return o;
   }
 
+  compBuf(src);
+  r += 'return r;';
+  return new Function('l', 'u', 'c', 's', r);
 }
 
 // render template
@@ -754,11 +636,11 @@ class Compiler {
 
 // render template file
 module.exports.compile = function(src, opts) {
-  return new Compiler().compile(new Parser().parse(src, opts));
+  return compileTemplate(parseTemplate(src, opts));
 };
 
-module.exports.renderCompiled = function(compiled, data, res) {
-  return compiled(data, Utils, null, res);
+module.exports.renderCompiled = function(compiled, data, ctx, res) {
+  return compiled(data, Utils, ctx, res);
 }
 
 var template = `
@@ -770,4 +652,30 @@ var template = `
 fn = module.exports.compile(template)
 // console.log('compiled', fn.toString())
 var res = module.exports.renderCompiled(fn, { foo: 'bar', html: '<script>asdas</script>', some_key: 'aaa.foo', _strings: { 'aaa.foo': 'AA Foo!' } });
+console.log(res)
+
+var data = {
+  "year": 1970,
+  "month": 1,
+  "day": 1,
+  "time": function() {
+    return {
+      "hour": 0,
+      "minute": 0,
+      "second": 0
+    }
+  },
+  "today": function(obj) {
+    return [obj.year, obj.month, obj.day].join('-')
+  }
+}
+
+template =  `
+* {time}
+* {today}
+`
+
+fn = module.exports.compile(template)
+// console.log('compiled', fn.toString())
+var res = module.exports.renderCompiled(fn, data);
 console.log(res)
