@@ -88,17 +88,17 @@ var qiq2 = (function() {
     },
 
     // return value (if it's a function, invoke it with locals)
-    v: function(s, t, l) {
+    v: function(s, t, l, c) {
       if (typeof s === 'function') {
-        return s.call(t, l);
+        return s.call(c, t, l);
       }
       return s;
     },
 
     // return value to be displayed
-    d: function(s, t, l) {
+    d: function(s, t, l, c) {
       if (typeof s === 'function') {
-        return s.call(t, l);
+        return s.call(c, t, l);
       }
 
       return (s === null || s === undefined) ? '' : s;
@@ -489,7 +489,7 @@ var qiq2 = (function() {
       if (!isNaN(tag)) return tag;
 
       if (tag[0] == "'" || tag[0] == '"') { // looks like a string
-        return '' + utilFn + '(' + tag + ',l._it,l)';
+        return '' + utilFn + '(' + tag + ',l._it,l,c)';
       }
 
       // . notation
@@ -533,11 +533,11 @@ var qiq2 = (function() {
       // use utilFn (u.v by default) to invoke function on last el
       if (ret.length === 1) {
         // return '' + utilFn}(' + ret[0]},null,l)';
-        return '' + utilFn + '(' + ret[0] + ',l._it,l)';
+        return '' + utilFn + '(' + ret[0] + ',l._it,l,c)';
       }
 
       var arr = ret.slice(0,-1);
-      return '' + utilFn + '(' + ret.join('&&') + ',' + arr.join('&&') + ',l)';
+      return '' + utilFn + '(' + ret.join('&&') + ',' + arr.join('&&') + ',l,c)';
     }
 
     function _getRef(b) {
