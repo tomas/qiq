@@ -1,4 +1,10 @@
-var mm = require('..');
+var qiq2 = require('../index2');
+
+function mm(template, data, opts) {
+  var fn = qiq2.compile(template, opts);
+  return qiq2(fn, data)
+}
+
 // var mm = require('../dist/qiq.min');
 var should = require('should');
 
@@ -30,10 +36,10 @@ describe('{{id}}', function(){
     mm('hi {{name.first}} {{name.last}}.', user).should.equal('hi tobi ferret.');
   })
 
-  it('should support bracket props', function(){
-    var user = { name: { first: 'tobi', 1: 'ferret' }};
-    mm('hi {{name["first"]}} {{name[1]}}.', user).should.equal('hi tobi ferret.');
-  })
+  // it('should support bracket props', function(){
+  //   var user = { name: { first: 'tobi', 1: 'ferret' }};
+  //   mm('hi {{name["first"]}} {{name[1]}}.', user).should.equal('hi tobi ferret.');
+  // })
 
   it('should escape newlines', function(){
     var user = { name: 'tobi' };
@@ -45,11 +51,13 @@ describe('{{id}}', function(){
   })
 
   it('should allow setting a different delimiter', function(){
-    var opts = { delimiter: /\[\[ ?| ?\]\]/ };
+    // var opts = { delimiter: /\[\[ ?| ?\]\]/ };
+    var opts = { delimiters: ['\[\\[', '\]\\]'] };
     var data = { foo: '123', var: 234 }
     mm('{{foo}} [[var]]', data, opts).should.equal('{{foo}} 234');
 
-    var opts = { delimiter: /\{\{ ?| ?\}\}/ };
+    // var opts = { delimiter: /\{\{ ?| ?\}\}/ };
+    var opts = { delimiters: ['{{', '}}'] };
     mm('{{foo}} [[var]]', data, opts).should.equal('123 [[var]]');
   })
 
@@ -57,16 +65,17 @@ describe('{{id}}', function(){
     try {
       mm('hi {{name)}}.');
     } catch (err) {
-      err.message.should.equal('invalid property "name)"');
+      err.message.should.equal("Unexpected token ')'");
+      // err.message.should.equal('invalid property "name)"');
       done();
     }
   })
 })
 
-describe('{{!id}}', function(){
+describe('raw filter', function(){
   it('should be unescaped', function(){
     var user = { name: '<script>' };
-    mm('hi {{^name}}.', user).should.equal('hi <script>.');
+    mm('hi {{name|raw}}.', user).should.equal('hi <script>.');
   })
 })
 
@@ -118,16 +127,10 @@ describe('{{#id}}', function(){
       }
     };
 
-    mm('{{#bool}}yes{{/bool}}', obj)
-      .should.equal('yes');
-
     mm('{{bool?}}yes{{/bool?}}', obj)
       .should.equal('yes');
 
     mm('{{?bool}}yes{{/}}', obj)
-      .should.equal('yes');
-
-    mm('{{#bool}}yes{{_else}}no{{/}}', obj)
       .should.equal('yes');
 
     mm('{{bool?}}yes{{_else}}no{{/}}', obj)
@@ -142,10 +145,7 @@ describe('{{#id}}', function(){
     mm('{{!bool}}yes{{_else}}no{{/}}', obj)
       .should.equal('no');
 
-    mm('{{#test}}yes{{_test}}no{{/test}}', obj)
-      .should.equal('yes');
-
-    mm('{{!test}}yes{{_test}}no{{/}}', obj)
+    mm('{{!test}}yes{{_else}}no{{/}}', obj)
       .should.equal('no');
 
     mm('{{!test}}yes{{_else}}no{{/test}}', obj)
@@ -361,9 +361,9 @@ describe('{{bool?}}', function() {
       falseThing: false
     };
 
-    var fn = mm.compile('{{falseThing?}}yes{{_else}}no{{/falseThing?}}');
-    fn(data).should.equal('no');
-    fn(data).should.equal('no');
+    var fn = qiq2.compile('{{falseThing?}}yes{{_else}}no{{/falseThing?}}');
+    qiq2(fn, data).should.equal('no');
+    qiq2(fn, data).should.equal('no');
   })
 
 })

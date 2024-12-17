@@ -27,10 +27,9 @@ var qiq2 = (function() {
       },
       decode: decodeURIComponent,
       encode: encodeURIComponent,
+      upper: function(s) { return s.toUpperCase() },
+      lower: function(s) { return s.toLowerCase() },
       slug: function(str) { return str.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') },
-      t: function(key, data) { return data._strings && data._strings[key] || key },
-      // upper: function(s) { return s.toUpperCase() },
-      // lower: function(s) { return s.toLowerCase() },
     }, // filters
 
     // if check
@@ -489,8 +488,6 @@ var qiq2 = (function() {
         return '' + utilFn + '(' + ret[0] + ',l._it,l)';
       }
 
-      console.log(ret);
-
       var arr = ret.slice(0,-1);
       return '' + utilFn + '(' + ret.join('&&') + ',' + arr.join('&&') + ',l)';
     }
@@ -510,7 +507,17 @@ var qiq2 = (function() {
     compile: function(src, opts) {
       return compileTemplate(parseTemplate(src, opts));
     },
-    render: function(compiled, data, ctx, res) {
+    render: function(compiled, data, opts, res) {
+      var ctx = opts && opts.context;
+      if (opts && opts.filters) {
+        for (var name in opts.filters) {
+          if (Utils.f[name])
+            console.warn("Cannot overwrite " + name + "filter");
+          else
+            Utils.f[name] = opts.filters[name];
+        }
+      }
+
       return compiled(data, Utils, ctx, res);
     }
   }
