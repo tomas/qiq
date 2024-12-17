@@ -518,6 +518,15 @@ var qiq2 = (function() {
       return compileTemplate(parseTemplate(src, opts));
     },
     render: function(compiled, data, ctx, res) {
+      // if (ctx && ctx.filters) {
+      //   for (var name in ctx.filters) {
+      //     if (Utils.f[name])
+      //       console.warn("Cannot overwrite " + name + "filter");
+      //     else
+      //       Utils.f[name] = ctx.filters[name];
+      //   }
+      // }
+
       return compiled(data, Utils, ctx, res);
     }
   }

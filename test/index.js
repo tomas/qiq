@@ -2,7 +2,7 @@ var qiq2 = require('../index2');
 
 function mm(template, data, opts) {
   var fn = qiq2.compile(template, opts);
-  return qiq2(fn, data)
+  return qiq2(fn, data, opts)
 }
 
 // var mm = require('../dist/qiq.min');
@@ -411,6 +411,8 @@ describe('deep objects', function() {
       links: [{ name: '1', links: [{ name: '1.1' }] }, { name: '2' }]
     }
 
+    var err;
+
     try {
       mm('{{ #links }}{{ name }}{{#links}} *{{name}}* {{/links}}{{/links}}', data)
     } catch(e) {
@@ -422,32 +424,33 @@ describe('deep objects', function() {
 
 })
 
-describe('helper functions', function(){
+describe('helper/filter functions', function(){
 
   it('works with strings', function(){
-    var user = { admin: true };
-    var globals = {
-      number: 123,
-      lower: function(str) { return str.toLowerCase() + globals.number },
-      upper: function(str) { return str.toUpperCase() + globals.number }
+    var data = { number: 123, admin: true };
+    var filters = {
+      my_helper: function(str, data) { return str.toUpperCase() + data.number },
     }
-    mm('{{admin?}}{{ upper("yup") }}{{/admin?}}', user, { globals: globals }).should.equal('YUP123');
+
+    mm('{{admin?}}{{ yup | my_helper }}{{/admin?}}', data, { filters: filters }).should.equal('YUP123');
   })
 
-  it('works with variables', function(){
+  it('works within objects', function(){
     var data = { user: { first_name: "Tom", last_name: "Po" } };
-    var globals = {
-      full_name: function(first, last) { return [first,last].join(' ') }
+    data.user.full_name = function(data) {
+      var user = data._it;
+      return [user.first_name,user.last_name].join(' ')
     }
-    mm('{{#user}}{{ full_name(.first_name,.last_name) }}{{/user}}', data, { globals: globals }).should.equal('Tom Po');
+    mm('{{#user}}{{ .full_name }}{{/user}}', data).should.equal('Tom Po');
   })
 
   it('works with array items', function(){
     var data = { foo: 123, users: [{ name: 'One'}, {name: 'Two'}, { name: 'Three'}] };
-    var globals = {
-      upcase: function(user, foo) { return user.name.toUpperCase() + foo }
+    data.upcase = function(data) {
+      var user = data._it;
+      return user.name.toUpperCase() + data.foo
     }
-    mm('{{#users}}{{ upcase(., foo) }}{{/users}}', data, { globals: globals }).should.equal('ONE123TWO123THREE123');
+    mm('{{#users}}{{ upcase }}{{/users}}', data).should.equal('ONE123TWO123THREE123');
   })
 
 })
