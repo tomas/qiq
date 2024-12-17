@@ -1,5 +1,42 @@
 var qiq2 = (function() {
 
+  // if (typeof Object.assign != 'function') {
+  //   Object.assign = function(target, varArgs) { // .length of function is 2
+  //     if (target == null) // TypeError if undefined or null
+  //       throw new TypeError('Cannot convert undefined or null to object');
+
+  //     var to = Object(target);
+
+  //     for (var index = 1; index < arguments.length; index++) {
+  //       var nextSource = arguments[index];
+
+  //       if (nextSource != null) { // Skip over if undefined or null
+  //         for (var nextKey in nextSource) {
+  //           // Avoid bugs when hasOwnProperty is shadowed
+  //           if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+  //             to[nextKey] = nextSource[nextKey];
+  //           }
+  //         }
+  //       }
+  //     }
+  //     return to;
+  //   };
+  // }
+
+  function merge(target, varArgs) {
+    for (var index = 1; index < arguments.length; index++) {
+      var source = arguments[index];
+
+      for (var key in source) {
+        if (target[key])
+          console.warn("Cannot overwrite " + key + " property");
+        else
+          target[key] = source[key]
+      }
+    }
+    return target;
+  }
+
   var HCHARS = /[&<>"']/,
       TAGS = /[?!#@_\/]/;
 
@@ -12,26 +49,26 @@ var qiq2 = (function() {
     '>=': function(a, b) { return Number(a) >=  Number(b) },
   };
 
+  var Filters = {
+    h: function(s) {
+      if (!s || !s.replace || !HCHARS.test(s))
+        return s;
+
+      return s
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g, '&#39;');
+    },
+    decode: decodeURIComponent,
+    encode: encodeURIComponent,
+    upper: function(s) { return s.toUpperCase() },
+    lower: function(s) { return s.toLowerCase() },
+    slug: function(s) { return s.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') }
+  }
+
   var Utils = {
-    f: {
-      h: function(s) {
-        if (!s || !s.replace || !HCHARS.test(s))
-          return s;
-
-        return s
-          .replace(/&/g,'&amp;')
-          .replace(/</g,'&lt;')
-          .replace(/>/g,'&gt;')
-          .replace(/"/g,'&quot;')
-          .replace(/'/g, '&#39;');
-      },
-      decode: decodeURIComponent,
-      encode: encodeURIComponent,
-      upper: function(s) { return s.toUpperCase() },
-      lower: function(s) { return s.toLowerCase() },
-      slug: function(str) { return str.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') },
-    }, // filters
-
     // if check
     c: function (t, p, l) {
       return Checks[t](p, l);
@@ -129,6 +166,15 @@ var qiq2 = (function() {
       if (!last) {
         throw new Error('no block, cannot add body');
       }
+
+      if (!tag) tag = 'else';
+
+      // if (tag != 'else' && last.tag != tag)
+      //   throw new Error('wrong tag: ' + tag + ', should be else or ' + last.tag)
+
+      if (tag != 'else')
+        throw new Error('invalid tag: _' + tag + ', should be _else')
+
       last.bods       = last.bods || {};
       last.bods[tag]  = [];
       buf = last.cur = last.bods[tag];
@@ -210,8 +256,6 @@ var qiq2 = (function() {
 
         // body
         case '_':
-          if (b.tag != 'else')
-            throw new Error('wrong tag', b.type, b.tag)
           addBody(b.tag);
           break;
 
@@ -444,6 +488,10 @@ var qiq2 = (function() {
 
       if (!isNaN(tag)) return tag;
 
+      if (tag[0] == "'" || tag[0] == '"') { // looks like a string
+        return '' + utilFn + '(' + tag + ',l._it,l)';
+      }
+
       // . notation
       if (tag.trim() === '.') {
         return 'l._it';
@@ -503,31 +551,28 @@ var qiq2 = (function() {
     return new Function('l', 'u', 'c', 's', r + 'return r;');
   }
 
+  function copyFilters(target, obj) {
+    for (var name in obj) {
+      if (target[name])
+        console.warn("Cannot overwrite " + name + " filter");
+      else
+        target[name] = obj[name];
+    }
+    return target;
+  }
+
   return {
     setup: function(opts) {
       if (opts && opts.filters) {
-        for (var name in opts.filters) {
-          if (Utils.f[name])
-            console.warn("Cannot overwrite " + name + "filter");
-          else
-            Utils.f[name] = opts.filters[name];
-        }
+        merge(Filters, opts.filters)
       }
     },
     compile: function(src, opts) {
       return compileTemplate(parseTemplate(src, opts));
     },
-    render: function(compiled, data, ctx, res) {
-      // if (ctx && ctx.filters) {
-      //   for (var name in ctx.filters) {
-      //     if (Utils.f[name])
-      //       console.warn("Cannot overwrite " + name + "filter");
-      //     else
-      //       Utils.f[name] = ctx.filters[name];
-      //   }
-      // }
-
-      return compiled(data, Utils, ctx, res);
+    render: function(compiled, data, opts, res) {
+      Utils.f = opts && opts.filters ? merge({}, Filters, opts.filters) : Filters;
+      return compiled(data, Utils, opts && opts.context, res);
     }
   }
 
