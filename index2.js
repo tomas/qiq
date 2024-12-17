@@ -504,11 +504,7 @@ var qiq2 = (function() {
   }
 
   return {
-    compile: function(src, opts) {
-      return compileTemplate(parseTemplate(src, opts));
-    },
-    render: function(compiled, data, opts, res) {
-      var ctx = opts && opts.context;
+    setup: function(opts) {
       if (opts && opts.filters) {
         for (var name in opts.filters) {
           if (Utils.f[name])
@@ -517,7 +513,11 @@ var qiq2 = (function() {
             Utils.f[name] = opts.filters[name];
         }
       }
-
+    },
+    compile: function(src, opts) {
+      return compileTemplate(parseTemplate(src, opts));
+    },
+    render: function(compiled, data, ctx, res) {
       return compiled(data, Utils, ctx, res);
     }
   }
@@ -525,9 +525,7 @@ var qiq2 = (function() {
 })()
 
 if (typeof module !== 'undefined' && module.exports) {
-  /**
-   * Expose 'render()' and 'compile()'.
-   */
   exports = module.exports = qiq2.render;
   exports.compile = qiq2.compile;
+  exports.setup = qiq2.setup;
 }
