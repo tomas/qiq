@@ -180,14 +180,6 @@ var qiq2 = (function() {
       buf = last.cur = last.bods[tag];
     }
 
-    // function getTagName(s) {
-    //   var i = s.indexOf(' ');
-    //   if (i >= 0) {
-    //     s = s.substring(0, i);
-    //   }
-    //   return s.substring(1);
-    // };
-
     // parse tag. returns true if tag was found
     function parseTag(str) {
       var b = {
@@ -254,7 +246,7 @@ var qiq2 = (function() {
           stackB(b);
           break;
 
-        // body
+        // _else (body)
         case '_':
           addBody(b.tag);
           break;
