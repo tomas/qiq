@@ -452,17 +452,16 @@ describe('helper/filter functions', function(){
 
   it('works within objects', function(){
     var data = { user: { first_name: "Tom", last_name: "Po" } };
-    data.user.full_name = function(data) {
-      var user = data._it;
-      return [user.first_name,user.last_name].join(' ')
+    data.user.full_name = function(user, data) {
+      return [user.first_name, user.last_name].join(' ')
     }
     mm('{{#user}}{{ .full_name }}{{/user}}', data).should.equal('Tom Po');
   })
 
   it('works with array items', function(){
     var data = { foo: 123, users: [{ name: 'One'}, {name: 'Two'}, { name: 'Three'}] };
-    data.upcase = function(data) {
-      var user = data._it;
+    data.upcase = function(user, data) {
+      // var user = data._it;
       return user.name.toUpperCase() + data.foo
     }
     mm('{{#users}}{{ upcase }}{{/users}}', data).should.equal('ONE123TWO123THREE123');
