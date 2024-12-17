@@ -353,7 +353,7 @@ var qiq2 = (function() {
         r = 'var r=\'\',l=l||{},c=c||{ctx:[]};var a=s?function(x){s.write(String(x))}:function(x){r+=x};';
 
     // compile buffer
-    function compBuf(buf) {
+    function compBuf(buf, parentVar) {
       // precompile, for content functions
       // buf.forEach(b => {
       //   if (b.type === '<') {
@@ -365,9 +365,14 @@ var qiq2 = (function() {
       // });
 
       buf.forEach(function(b) {
-        if (b.type === 'r') {
-          // reference
-          r += 'a(' + _getRef(b) + ');';
+        if (b.type === 'r') { // reference
+
+          if (b.tag[0] == '.' && b.tag[1] == '.') { // parent
+            r += 'a(' + _getParentRef(b, parentVar) + ');';
+          } else {
+            r += 'a(' + _getRef(b) + ');';
+          }
+
         // } else if (block.type === '+' && !b.tag) {
         //   // insert body (invoke content function)
         //   r += 'if(c._$body){a(c._$body());c._$body=null;}';
@@ -406,7 +411,7 @@ var qiq2 = (function() {
             // }
             r += 'l._it=a' + e + '[i' + e + '];';
             r += 'l.$idx=i' + e + ';'; // cur id
-            compBuf(b.buf, true);
+            compBuf(b.buf, 'a' + e);
             r += '}';
           }
           r += '}';
@@ -425,7 +430,7 @@ var qiq2 = (function() {
           }
           r += '}';
           _else(b);
-        } else if (!b.type){
+        } else if (!b.type) {
           // default: raw text
           r += 'a(\'' + b + '\');';
         }
@@ -488,7 +493,7 @@ var qiq2 = (function() {
       if (tag.trim() === '.') {
         return 'l._it';
       } else if (tag[0] === '.') {
-        tag = '_it' + tag;
+        tag = (tag[1] == '.') ? '_it' + tag.substring(1) : '_it' + tag;
       }
 
       var els = [], i, c, sub = false, idx = 0;
@@ -538,6 +543,17 @@ var qiq2 = (function() {
       b.f.forEach(function(f) { o = 'u.f.' + f + '(' + o + ',l,c)' });
       return o;
     }
+
+    function _getParentRef(b, parentVar) {
+      // var o = _val(b.tag, 'u.d');
+      var utilFn = 'u.d';
+      var obj = parentVar + '.' + b.tag.substring(2);
+      var o = '' + utilFn + '(' + obj + ',' + parentVar + ',l,c)';
+      if (!b.f) return o;
+      b.f.forEach(function(f) { o = 'u.f.' + f + '(' + o + ',l,c)' });
+      return o;
+    }
+
 
     compBuf(src);
     return new Function('l', 'u', 'c', 's', r + 'return r;');
