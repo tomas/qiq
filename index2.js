@@ -1,8 +1,7 @@
 var qiq2 = (function() {
 
-  // special chars
-  var HCHARS = /[&<>"']/;
-  var TAGS = /[?!#@_\/]/;
+  var HCHARS = /[&<>"']/,
+      TAGS = /[?!#@_\/]/;
 
   var Checks = {
     '==': function(a, b) { return a === b },
@@ -26,6 +25,8 @@ var qiq2 = (function() {
           .replace(/"/g,'&quot;')
           .replace(/'/g, '&#39;');
       },
+      decode: decodeURIComponent,
+      encode: encodeURIComponent,
       slug: function(str) { return str.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/ /g, '-') },
       t: function(key, data) { return data._strings && data._strings[key] || key },
       // upper: function(s) { return s.toUpperCase() },
@@ -70,7 +71,8 @@ var qiq2 = (function() {
 
   function parseTemplate(src, opts) {
 
-    var main       = [],    // global buf, to be returned by parse function
+    var opts       = opts || {},
+        main       = [],    // global buf, to be returned by parse function
         buf        = main,  // cur buf, where content is added
         stack      = [],    // stack of parents blocks
         contents   = {};    // contents to be replaced in layouts
@@ -133,13 +135,13 @@ var qiq2 = (function() {
       buf = last.cur = last.bods[tag];
     }
 
-    function getTagName(s) {
-      var i = s.indexOf(' ');
-      if (i >= 0) {
-        s = s.substring(0, i);
-      }
-      return s.substring(1);
-    };
+    // function getTagName(s) {
+    //   var i = s.indexOf(' ');
+    //   if (i >= 0) {
+    //     s = s.substring(0, i);
+    //   }
+    //   return s.substring(1);
+    // };
 
     // parse tag. returns true if tag was found
     function parseTag(str) {
@@ -152,18 +154,24 @@ var qiq2 = (function() {
         // skip this tag if it's not correct
         // if (str.indexOf(' ') >= 0 || str.indexOf('(') >= 0 || str.indexOf(';') >= 0) {
         if (str.indexOf('(') >= 0 || str.indexOf(';') >= 0) {
-          console.warn('invalied tag:', str)
+          console.warn('invalid tag:', str)
           return false;
         }
-        // reference
-        b.type = 'r';
-        parseF(str, b);
-        putB(b);
-        return true;
-      }
 
-      // remove first char
-      b.tag = getTagName(str);
+        if (str.slice(-1) == '?') {
+          b.type = '?';
+          b.tag = str.slice(0, -1);
+        } else {
+          // reference
+          b.type = 'r';
+          parseF(str, b);
+          putB(b);
+          return true;
+        }
+      } else {
+        // remove first char
+        b.tag = str.substring(1).split(/ |\?/)[0]
+      }
 
       // parse params
       // b.params = parseParams(str);
@@ -204,15 +212,17 @@ var qiq2 = (function() {
         // body
         case '_':
           if (b.tag != 'else')
-            throw new Error(`wrong tag {${b.type}${b.tag}`)
+            throw new Error('wrong tag', b.type, b.tag)
           addBody(b.tag);
           break;
 
         // end
         case '/':
           var o = pop();
-          if (o && b.tag && o.tag !== b.tag)  {
-            console.error(`tag mismatch: ${o.tag} vs ${b.tag}`);
+          if (!o) {
+            console.warn('extra closing /');
+          } else if (b.tag && o.tag !== b.tag)  {
+            console.warn('tag mismatch', o.tag, b.tag);
           }
           break;
       }
@@ -244,13 +254,13 @@ var qiq2 = (function() {
       // remove spaces at the beginning of lines and line breaks
       if (opts.htmltrim) {
         src = src.replace(/^\s+/g, '');
-      } else {``
+      } else {
         src = src.replace(/\r/g , '\\r').replace(/\n/g , '\\n');
       }
 
       // remove comments
       // src = removeComments(src);
-      var dd = (opts || {}).delimeters || ['{{', '}}'],
+      var dd = (opts || {}).delimiters || ['{{', '}}'],
           regA  = new RegExp('(.*?)\\' + dd[0] + '\\s*', 'msg'),
           regB  = new RegExp('(.*?)\\' + dd[1], 'msg'),
           index = 0, openM, closeM;
@@ -276,22 +286,22 @@ var qiq2 = (function() {
         }
 
         if (!closeM) { // parsing error
-          throw new Error(`No ${dd[1]} at idx ${index}`);
+          throw new Error('No ' + dd[1] + 'at idx', index);
         }
 
         index = closeM.index + closeM[0].length;
         regA.lastIndex = index;
 
-        if (!parseTag(tag)) {
+        if (!parseTag(tag.trim())) {
           // console.log('tag is ignored')
           // tag is ignored: push content to buf
-          pushStr(`{${tag}}`);
+          pushStr('{' + tag + '}');
         }
       }
 
       // stack should be empty
       if (stack.length > 0) {
-        throw new Error(`Missing closing tag for {${stack[0].type}${stack[0].tag}`);
+        throw new Error('Missing closing tag for', stack[0].type, stack[0].tag);
       }
 
       if (index < src.length) {
@@ -312,23 +322,23 @@ var qiq2 = (function() {
       // precompile, for content functions
       // buf.forEach(b => {
       //   if (b.type === '<') {
-      //     r += `c._${b.tag}=function(){var r='';`;
+      //     r += 'c._' + b.tag}=function(){var r='';';
       //     r += 'var a=s?function(x){s.write(String(x))}:function(x){r+=x};';
       //     compBuf(b.buf);
       //     r += 'return r;};';
       //   }
       // });
 
-      buf.forEach(b => {
+      buf.forEach(function(b) {
         if (b.type === 'r') {
           // reference
-          r += `a(${_getRef(b)});`;
+          r += 'a(' + _getRef(b) + ');';
         // } else if (block.type === '+' && !b.tag) {
         //   // insert body (invoke content function)
-        //   r += `if(c._$body){a(c._$body());c._$body=null;}`;
+        //   r += 'if(c._$body){a(c._$body());c._$body=null;}';
         // } else if (block.type === '+') {
         //   // insert content (invoke content function)
-        //   r += `if(c._${block.tag}){a(c._${block.tag}())}`;
+        //   r += 'if(c._' + block.tag + '){a(c._' + block.tag + '())}';
         //   if (block.buf) {
         //     r += 'else{';
         //     compBuf(block.buf);
@@ -338,7 +348,7 @@ var qiq2 = (function() {
           // conditional block
           var not = b.type === '!' ? '!' : '';
           _pushC();
-          r += `if(${not}u.b(${_val(b.tag)})){`;
+          r += 'if(' + not + 'u.b(' + _val(b.tag) + ')){';
           compBuf(b.buf);
           r += '}';
           _else(b);
@@ -348,19 +358,19 @@ var qiq2 = (function() {
           i++;
           var e = i;
           _pushC(true);
-          r += `var a${e}=u.a(${_val(b.tag)});`;
-          r += `if(a${e}){`;
+          r += 'var a' + e + '=u.a(' + _val(b.tag) + ');';
+          r += 'if(a' + e + '){';
           if (!b.buf) {
-            r += `a(a${e})`;
+            r += 'a(a' + e + ')';
           } else {
             // var it = block.params.it && stripDoubleQuotes(block.params.it);
-            r += `l.$length=a${e}.length;`; // cur array length
-            r += `for(var i${e}=0;i${e}<a${e}.length;i${e}++){`;
+            r += 'l.$len=a' + e + '.length;'; // cur array length
+            r += 'for(var i' + e + '=0;i' + e + '<a' + e + '.length;i' + e + '++){';
             // if (it) {
-            //   r += `l.${it}=a${e}[i${e}];`;
+            //   r += 'l.' + it}=a' + e + '[i' + e + '];';
             // }
-            r += `l._it=a${e}[i${e}];`;
-            r += `l.$idx=i${e};`; // cur id
+            r += 'l._it=a' + e + '[i' + e + '];';
+            r += 'l.$idx=i' + e + ';'; // cur id
             compBuf(b.buf, true);
             r += '}';
           }
@@ -370,19 +380,19 @@ var qiq2 = (function() {
         } else if (b.type === '@') { // if check
           i++;
           var e = i;
-          // r += `var h${e}=u.h('${b.tag}',${_getParams(b.params)},l);`;
-          r += `var h${e}=u.c('${b.method}',${_val(b.params.key)},${b.params.value},l);`;
-          r += `if(h${e}){`;
+          // r += 'var h' + e + '=u.h(\'' + b.tag + '\',' + _getParams(b.params) + ',l);';
+          r += 'var h' + e + '=u.c(\'' + b.method + '\',' + _val(b.params.key) + ',' + b.params.value + ',l);';
+          r += 'if(h' + e + '){';
           if (b.buf) {
             compBuf(b.buf);
           } else {
-            r += `a(h${e});`;
+            r += 'a(h' + e + ');';
           }
           r += '}';
           _else(b);
         } else if (!b.type){
           // default: raw text
-          r += `a('${b}');`;
+          r += 'a(\'' + b + '\');';
         }
       });
     }
@@ -397,36 +407,36 @@ var qiq2 = (function() {
 
     function _pushC(isArray) {
       var e = i;
-      r += `var ctx${e}={};`;
+      r += 'var ctx' + e + '={};';
       // Object.keys(params).forEach(key => {
       //   if (key === '$') {
       //     return;
       //   }
-      //   r += `ctx${e}.${key}=l.${key};`;
-      //   r += `l.${key}=${_getParam(params[key])};`;
+      //   r += 'ctx' + e + '.' + key}=l.' + key};';
+      //   r += 'l.' + key}=' + _getParam(params[key])};';
       // });
       if (isArray) {
-        r += `ctx${e}._it=l._it;`;
-        r += `ctx${e}.idx=l.$idx;`;
-        r += `ctx${e}.length=l.$length;`;
+        r += 'ctx' + e + '._it=l._it;';
+        r += 'ctx' + e + '.idx=l.$idx;';
+        r += 'ctx' + e + '.length=l.$len;';
       }
 
-      r += `c.ctx.push(ctx${e});`;
+      r += 'c.ctx.push(ctx' + e + ');';
     }
 
     function _popC(isArray) {
       var e = i;
-      r += `var p_ctx${e}=c.ctx.pop();`;
+      r += 'var p_ctx' + e + '=c.ctx.pop();';
       // Object.keys(params).forEach(key => {
       //   if (key === '$') {
       //     return;
       //   }
-      //   r += `l.${key}=p_ctx${e}.${key};`;
+      //   r += 'l.' + key}=p_ctx' + e + '.' + key};';
       // });
       if (isArray) {
-        r += `l._it=p_ctx${e}._it;`;
-        r += `l.$idx=p_ctx${e}.idx;`;
-        r += `l.$length=p_ctx${e}.length;`;
+        r += 'l._it=p_ctx' + e + '._it;';
+        r += 'l.$idx=p_ctx' + e + '.idx;';
+        r += 'l.$len=p_ctx' + e + '.length;';
       }
     }
 
@@ -436,7 +446,7 @@ var qiq2 = (function() {
       if (!isNaN(tag)) return tag;
 
       // . notation
-      if (tag === '.') {
+      if (tag.trim() === '.') {
         return 'l._it';
       } else if (tag[0] === '.') {
         tag = '_it' + tag;
@@ -475,24 +485,25 @@ var qiq2 = (function() {
 
       // use utilFn (u.v by default) to invoke function on last el
       if (ret.length === 1) {
-        // return `${utilFn}(${ret[0]},null,l)`;
-        return `${utilFn}(${ret[0]},l._it,l)`;
+        // return '' + utilFn}(' + ret[0]},null,l)';
+        return '' + utilFn + '(' + ret[0] + ',l._it,l)';
       }
 
+      console.log(ret);
+
       var arr = ret.slice(0,-1);
-      return `${utilFn}(${ret.join('&&')},${arr.join('&&')},l)`;
+      return '' + utilFn + '(' + ret.join('&&') + ',' + arr.join('&&') + ',l)';
     }
 
     function _getRef(b) {
       var o = _val(b.tag, 'u.d');
       if (!b.f) return o;
-      b.f.forEach(function(f) { o = `u.f.${f}(${o},l,c)` });
+      b.f.forEach(function(f) { o = 'u.f.' + f + '(' + o + ',l,c)' });
       return o;
     }
 
     compBuf(src);
-    r += 'return r;';
-    return new Function('l', 'u', 'c', 's', r);
+    return new Function('l', 'u', 'c', 's', r + 'return r;');
   }
 
   return {
@@ -508,7 +519,7 @@ var qiq2 = (function() {
 
 if (typeof module !== 'undefined' && module.exports) {
   /**
-   * Expose `render()` and `compile()`.
+   * Expose 'render()' and 'compile()'.
    */
   exports = module.exports = qiq2.render;
   exports.compile = qiq2.compile;
