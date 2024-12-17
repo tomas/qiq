@@ -2,6 +2,7 @@ var qiq2 = require('../index2');
 
 function mm(template, data, opts) {
   var fn = qiq2.compile(template, opts);
+  // console.log(fn.toString())
   return qiq2(fn, data, opts)
 }
 
@@ -380,6 +381,10 @@ describe('deep objects', function() {
 
   it('descends directly into arrays', function() {
     mm('{{#nested.arr}}number: {{.}} {{_else}}foo{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
+  })
+
+  it('allows accessing parent element', function() {
+    mm('{{#nested.arr}}number: {{.}} {{ ..val }}{{/}}', obj).should.equal('number: 1 hello number: 2 hello number: 3 hello ');
   })
 
   it('descends into arrays, if context matches', function() {
