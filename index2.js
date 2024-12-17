@@ -175,8 +175,8 @@ var qiq2 = (function() {
       if (tag != 'else')
         throw new Error('invalid tag: _' + tag + ', should be _else')
 
-      last.bods       = last.bods || {};
-      last.bods[tag]  = [];
+      last.bods      = last.bods || {};
+      last.bods[tag] = [];
       buf = last.cur = last.bods[tag];
     }
 
