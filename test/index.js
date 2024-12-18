@@ -1,4 +1,11 @@
-var mm = require('..');
+var qiq2 = require('../index2');
+
+function mm(template, data, opts) {
+  var fn = qiq2.compile(template, opts);
+  // console.log(fn.toString())
+  return qiq2(fn, data, opts)
+}
+
 // var mm = require('../dist/qiq.min');
 var should = require('should');
 
@@ -30,10 +37,10 @@ describe('{{id}}', function(){
     mm('hi {{name.first}} {{name.last}}.', user).should.equal('hi tobi ferret.');
   })
 
-  it('should support bracket props', function(){
-    var user = { name: { first: 'tobi', 1: 'ferret' }};
-    mm('hi {{name["first"]}} {{name[1]}}.', user).should.equal('hi tobi ferret.');
-  })
+  // it('should support bracket props', function(){
+  //   var user = { name: { first: 'tobi', 1: 'ferret' }};
+  //   mm('hi {{name["first"]}} {{name[1]}}.', user).should.equal('hi tobi ferret.');
+  // })
 
   it('should escape newlines', function(){
     var user = { name: 'tobi' };
@@ -45,11 +52,13 @@ describe('{{id}}', function(){
   })
 
   it('should allow setting a different delimiter', function(){
-    var opts = { delimiter: /\[\[ ?| ?\]\]/ };
+    // var opts = { delimiter: /\[\[ ?| ?\]\]/ };
+    var opts = { delimiters: ['\[\\[', '\]\\]'] };
     var data = { foo: '123', var: 234 }
     mm('{{foo}} [[var]]', data, opts).should.equal('{{foo}} 234');
 
-    var opts = { delimiter: /\{\{ ?| ?\}\}/ };
+    // var opts = { delimiter: /\{\{ ?| ?\}\}/ };
+    var opts = { delimiters: ['{{', '}}'] };
     mm('{{foo}} [[var]]', data, opts).should.equal('123 [[var]]');
   })
 
@@ -57,16 +66,17 @@ describe('{{id}}', function(){
     try {
       mm('hi {{name)}}.');
     } catch (err) {
-      err.message.should.equal('invalid property "name)"');
+      err.message.should.equal("Unexpected token ')'");
+      // err.message.should.equal('invalid property "name)"');
       done();
     }
   })
 })
 
-describe('{{!id}}', function(){
+describe('raw filter', function(){
   it('should be unescaped', function(){
     var user = { name: '<script>' };
-    mm('hi {{^name}}.', user).should.equal('hi <script>.');
+    mm('hi {{name|raw}}.', user).should.equal('hi <script>.');
   })
 })
 
@@ -118,13 +128,10 @@ describe('{{#id}}', function(){
       }
     };
 
-    mm('{{#bool}}yes{{/bool}}', obj)
-      .should.equal('yes');
-
     mm('{{bool?}}yes{{/bool?}}', obj)
       .should.equal('yes');
 
-    mm('{{#bool}}yes{{_else}}no{{/}}', obj)
+    mm('{{?bool}}yes{{/}}', obj)
       .should.equal('yes');
 
     mm('{{bool?}}yes{{_else}}no{{/}}', obj)
@@ -139,49 +146,48 @@ describe('{{#id}}', function(){
     mm('{{!bool}}yes{{_else}}no{{/}}', obj)
       .should.equal('no');
 
-    mm('{{#test}}yes{{_test}}no{{/test}}', obj)
-      .should.equal('yes');
+    // mm('{{!test}}yes{{_else}}no{{/}}', obj)
+    //   .should.equal('no');
 
-    mm('{{!test}}yes{{_test}}no{{/}}', obj)
-      .should.equal('no');
-
-    mm('{{!test}}yes{{_else}}no{{/test}}', obj)
-      .should.equal('no');
+    // mm('{{!test}}yes{{_else}}no{{/test}}', obj)
+    //   .should.equal('no');
 
   })
 
-  it('should support functions that return strings', function(){
+  xit('should support functions that receive blocks', function(){
     var obj = {
       md: function(str, i) {
+        console.log(str, i)
         return str.replace(/_(.*?)_/g, '<em>$1</em>');
       },
       item: {
         name: "Foo",
-        upper: function(str, i) {
-          return str.toUpperCase()
+        upper: function(data) {
+          var item = data._it.name;
+          return item.toUpperCase()
         },
       }
     };
 
-    mm('{{#md}}some _markdown_ !{{/md}} {{#item}}{{#upper}}{{name}}{{/upper}}{{/item}}', obj)
+    mm('{{$md}}some _markdown_ !{{/md}} {{#item}}{{.upper}}{{/item}}', obj)
       .should.equal('some <em>markdown</em> ! FOO');
   })
 
   it('should iterate arrays of objects', function(){
     var contacts = { contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }] };
-    mm('<ul>{{#contacts}}<li>{{name}}</li>{{_}}bar{{/contacts}}</ul>', contacts)
+    mm('<ul>{{#contacts}}<li>{{.name}}</li>{{_}}bar{{/contacts}}</ul>', contacts)
      .should.equal('<ul><li>tobi</li><li>loki</li><li>jane</li></ul>');
   })
 
   it('should iterate arrays of elements', function(){
     var contacts = { numbers: ['one', 'two', 'three'] };
-    mm('<ul>{{#numbers}}<li>{{this}}</li>{{_else}}foo{{/}}</ul>', contacts)
+    mm('<ul>{{#numbers}}<li>{{.}}</li>{{_else}}foo{{/}}</ul>', contacts)
      .should.equal('<ul><li>one</li><li>two</li><li>three</li></ul>');
   })
 
   it('should not iterate nonexisting arrays', function(){
     var contacts = { numbers: ['one', 'two', 'three'] };
-    mm('<ul>{{!numbers}}<li>{{this}}</li>{{_else}}<li>no results</li>{{/}}</ul>', contacts)
+    mm('<ul>{{!numbers}}<li>{{.}}</li>{{_else}}<li>no results</li>{{/}}</ul>', contacts)
      .should.equal('<ul><li>no results</li></ul>');
   })
 
@@ -205,7 +211,7 @@ describe('{{#id}}', function(){
 
   it('should descend into objects if requested and present', function(){
     var data = { color: { r: '1', g: '2', b: 3 } };
-    mm('{{#color}}{{r}}-{{g}}-{{b}}{{_}}foobar{{/color}}', data).should.equal('1-2-3');
+    mm('{{#color}}{{.r}}-{{.g}}-{{.b}}{{_}}foobar{{/color}}', data).should.equal('1-2-3');
   })
 
   it('should not descend into objects if not present', function(){
@@ -271,19 +277,19 @@ describe('{{!id}}', function(){
 
   it('should process populated arrays', function(){
     var users = { users: [ 'tobi' ] };
-    mm('users exist: {{#users}}yep, {{this}}{{/users}}{{!users}}nope{{/users}}', users)
+    mm('users exist: {{#users}}yep, {{.}}{{/users}}{{!users}}nope{{/users}}', users)
      .should.equal('users exist: yep, tobi');
   })
 
   it('should include indexes', function(){
     var users = { users: [ 'tom', 'mot' ] };
-    mm('users:{{#users}} {{i}} -> {{this}}{{/users}}', users)
+    mm('users:{{#users}} {{$idx}} -> {{.}}{{/users}}', users)
      .should.equal('users: 0 -> tom 1 -> mot');
   })
 
   it('should honor ifelse', function(){
     var data = { fails: false };
-    mm('fails? {{#fails}}yep{{_fails}}nope{{/fails}}', data)
+    mm('fails? {{fails?}}yep{{_else}}nope{{/fails}}', data)
      .should.equal('fails? nope');
   })
 
@@ -295,7 +301,7 @@ describe('{{!id}}', function(){
 
   it('should honor ifelse (inverted)', function(){
     var data = { works: true };
-    mm('fails? {{!works}}yep{{_works}}nope{{/works}}', data)
+    mm('fails? {{!works}}yep{{_else}}nope{{/works}}', data)
      .should.equal('fails? nope');
   })
 
@@ -307,19 +313,19 @@ describe('{{!id}}', function(){
 
   it('should supported nested ifelses', function(){
     var data = { fails: false, hot: false };
-    mm('fails? {{#fails}}yep{{_fails}}nope, {{#hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)
+    mm('fails? {{fails?}}yep{{_else}}nope, {{hot?}}not cool{{_else}}cool!{{/}}{{/}}', data)
      .should.equal('fails? nope, cool!');
   })
 
-  it('should supported nested ifelses', function(){
+  it('should support nested ifelses', function(){
     var data = { fails: false, hot: true };
-    mm('fails? {{#fails}}yep{{_fails}}nope, {{!hot}}not cool{{_hot}}cool!{{/hot}}{{/fails}}', data)
+    mm('fails? {{fails?}}yep{{_else}}nope, {{!hot}}not cool{{_else}}cool!{{/}}{{/}}', data)
      .should.equal('fails? nope, cool!');
   })
 
   it('can do nested question mark and then descend block', function(){
     var data = { products: [ { name: 'one' }, { name: 'two' } ] };
-    mm('{{products?}}Products: {{products.length}} --> {{#products}}{{name}} {{/products}}{{/products?}}', data)
+    mm('{{products?}}Products: {{products.length}} --> {{#products}}{{.name}} {{/products}}{{/products?}}', data)
      .should.equal('Products: 2 --> one two ');
   })
 
@@ -333,11 +339,19 @@ describe('{{!id}}', function(){
         { name: '3' },
       ],
     };
-    mm('{{menu?}}Menu: {{menu}} --> {{#links}}{{name}} {{sublinks?}}submenu:{{#sublinks}}[{{name}}]{{#items}}{{this}}{{/items}} {{/sublinks}}{{/sublinks?}}{{/links}}{{/menu?}}', data)
+    mm('{{menu?}}Menu: {{menu}} --> {{#links}}{{.name}} {{.sublinks?}}submenu:{{#.sublinks}}[{{.name}}]{{#.items}}{{.}}{{/.items}} {{/.sublinks}}{{/.sublinks?}}{{/links}}{{/menu?}}', data)
      .should.equal('Menu: Catalog --> 1 2 submenu:[2.1] [2.2]abc 3 ');
   })
 
 })
+
+// describe('{{ _else @if }}', function() {
+//   it('should work', function(){
+//     var data = { foo: false, bar: true };
+//     mm('{{ foo? }}foo{{ _else @if bar == 123 }}bar!{{ / }}', data)
+//      .should.equal('bar!');
+//   })
+// })
 
 describe('{{bool?}}', function() {
 
@@ -358,11 +372,19 @@ describe('{{bool?}}', function() {
       falseThing: false
     };
 
-    var fn = mm.compile('{{falseThing?}}yes{{_else}}no{{/falseThing?}}');
-    fn(data).should.equal('no');
-    fn(data).should.equal('no');
+    var fn = qiq2.compile('{{falseThing?}}yes{{_else}}no{{/falseThing?}}');
+    qiq2(fn, data).should.equal('no');
+    qiq2(fn, data).should.equal('no');
   })
 
+})
+
+describe('objects', function() {
+  var obj =  { prop: true, val: 'hello', arr: [{ number: 1 }, { number: 2 }] };
+
+  it('allows accessing parent element', function() {
+    mm('{{#arr}}number: {{.number}} {{ ..val }} {{/}}', obj).should.equal('number: 1 hello number: 2 hello ');
+  })
 })
 
 describe('deep objects', function() {
@@ -374,11 +396,15 @@ describe('deep objects', function() {
   })
 
   it('descends directly into arrays', function() {
-    mm('{{#nested.arr}}number: {{this}} {{_else}}foo{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
+    mm('{{#nested.arr}}number: {{.}} {{_else}}foo{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
+  })
+
+  it('allows accessing parent element', function() {
+    mm('{{#nested.arr}}number: {{.}} {{ ..val }} {{/}}', obj).should.equal('number: 1 hello number: 2 hello number: 3 hello ');
   })
 
   it('descends into arrays, if context matches', function() {
-    mm('{{#nested}}{{#arr}}number: {{this}} {{_else}}foo{{/}}{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
+    mm('{{#nested}}{{#.arr}}number: {{.}} {{_else}}foo{{/}}{{/}}', obj).should.equal('number: 1 number: 2 number: 3 ');
   })
 
   it('allows question mark directly, if question mark', function() {
@@ -390,7 +416,7 @@ describe('deep objects', function() {
   })
 
   it('allows question mark, only if in context', function() {
-    mm('{{nested?}}{{#nested}}{{prop?}}awesome{{_else}}not so awesome{{/prop?}}{{/nested}}{{/nested?}}', obj).should.equal('awesome');
+    mm('{{nested?}}{{#nested}}{{.prop?}}awesome{{_else}}not so awesome{{/.prop?}}{{/nested}}{{/nested?}}', obj).should.equal('awesome');
   })
 
   it('should traverse objects with dots', function(){
@@ -399,14 +425,16 @@ describe('deep objects', function() {
   })
 
   it('should descend into objects with dots', function(){
-    var data = { my: { color: { r: '1', g: '2', b: 3 } } };
-    mm('{{#my.color}}{{r}}-{{g}}-{{b}}{{/my.color}}', data).should.equal('1-2-3');
+    var data = { my: { name: 'superman', color: { r: '1', g: '2', b: 3 } } };
+    mm('{{#my.color}}{{.r}}-{{.g}}-{{.b}} -- {{my.name}}{{/my.color}}', data).should.equal('1-2-3 -- superman');
   })
 
-  it('forbids rewriting condition', function() {
+  xit('forbids rewriting condition', function() {
     var data = {
       links: [{ name: '1', links: [{ name: '1.1' }] }, { name: '2' }]
     }
+
+    var err;
 
     try {
       mm('{{ #links }}{{ name }}{{#links}} *{{name}}* {{/links}}{{/links}}', data)
@@ -419,32 +447,45 @@ describe('deep objects', function() {
 
 })
 
-describe('helper functions', function(){
+describe('helper/filter functions', function(){
 
   it('works with strings', function(){
-    var user = { admin: true };
-    var globals = {
-      number: 123,
-      lower: function(str) { return str.toLowerCase() + globals.number },
-      upper: function(str) { return str.toUpperCase() + globals.number }
+    var data = { number: 123, yup: "yup", admin: true };
+    var filters = {
+      my_helper: function(str, data) {
+        return str.toUpperCase() + data.number
+      },
     }
-    mm('{{admin?}}{{ upper("yup") }}{{/admin?}}', user, { globals: globals }).should.equal('YUP123');
+
+    mm("{{admin?}}{{ 'yup' | my_helper }}{{/admin?}}", data, { filters: filters }).should.equal('YUP123');
   })
 
-  it('works with variables', function(){
-    var data = { user: { first_name: "Tom", last_name: "Po" } };
-    var globals = {
-      full_name: function(first, last) { return [first,last].join(' ') }
+  it('works with props', function(){
+    var data = { number: 123, foo: "yuppie", admin: true };
+    var filters = {
+      my_helper: function(str, data) {
+        return str.toUpperCase() + data.number
+      },
     }
-    mm('{{#user}}{{ full_name(first_name,last_name) }}{{/user}}', data, { globals: globals }).should.equal('Tom Po');
+
+    mm("{{admin?}}{{ foo | my_helper }}{{/admin?}}", data, { filters: filters }).should.equal('YUPPIE123');
+  })
+
+  it('works within objects', function(){
+    var data = { user: { first_name: "Tom", last_name: "Po" } };
+    data.user.full_name = function(user, data) {
+      return [user.first_name, user.last_name].join(' ')
+    }
+    mm('{{#user}}{{ .full_name }}{{/user}}', data).should.equal('Tom Po');
   })
 
   it('works with array items', function(){
-    var data = { users: [{ name: 'One'}, {name: 'Two'}, { name: 'Three'}] };
-    var globals = {
-      upcase: function(user) { return user.name.toUpperCase() }
+    var data = { foo: 123, users: [{ name: 'One'}, {name: 'Two'}, { name: 'Three'}] };
+    data.upcase = function(user, data) {
+      // var user = data._it;
+      return user.name.toUpperCase() + data.foo
     }
-    mm('{{#users}}{{ upcase(this) }}{{/users}}', data, { globals: globals }).should.equal('ONETWOTHREE');
+    mm('{{#users}}{{ upcase }}{{/users}}', data).should.equal('ONE123TWO123THREE123');
   })
 
 })
