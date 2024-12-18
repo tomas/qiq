@@ -14,7 +14,7 @@
   },
   "scripts": {
     "test": "mocha test",
-    "build": "rm -Rf dist && mkdir -p dist && cat index2.js > dist/qiq2.js && node_modules/uglify-js/bin/uglifyjs --compress --mangle -- index2.js > dist/qiq2.min.js"
+    "build": "rm -Rf dist && mkdir -p dist && cat index.js > dist/qiq2.js && node_modules/uglify-js/bin/uglifyjs --compress --mangle -- index.js > dist/qiq2.min.js"
   },
   "devDependencies": {
     "mocha": "^7.1.0",

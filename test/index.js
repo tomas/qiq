@@ -1,4 +1,4 @@
-var qiq2 = require('../index2');
+var qiq2 = require('..');
 
 function mm(template, data, opts) {
   var fn = qiq2.compile(template, opts);
