@@ -92,11 +92,17 @@ to follow the template logic, or return a string in which case that is what is p
 ### Arrays
 
 ```js
-  var template = '<ul>{{#contacts}}<li>{{it.name}}</li>{{/contacts}}</ul>';
+  var template = '<ul>{{#contacts}}<li>{{.name}}</li>{{/contacts}}</ul>';
   var list = {
     contacts: [{ name: 'tobi' }, { name: 'loki' }, { name: 'jane' }]
   };
   qiq(template, list); // => "<ul><li>tobi</li><li>loki</li><li>jane</li></ul>";
+
+  var template = '<ul>{{#numbers}}<li>{{.}}</li>{{/contacts}}</ul>';
+  var list = {
+    numbers: [1,2,3]
+  };
+  qiq(template, list); // => "<ul><li>1</li><li>2</li><li>3</li></ul>";
 ```
 
 For more examples check the `test/index.js` file in the repo.
