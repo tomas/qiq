@@ -1,45 +1,19 @@
 
 # qiq
 
-  Minimal templating engine, based on [minstache](https://github.com/visionmedia/minstache).
+  Minimal templating engine, based on igo-dust
 
 ## Installation
 
     $ npm install qiq
 
-## qiq(1)
-
-  The `qiq(1)` executable can compile a file to a valid
-  stand-alone commonjs module for you, there's no need to have qiq
-  as a dependency:
-
-  hello.qiq:
-
-```
-Hello {{name}}! {{!authenticated}}<a href="/login">login</a>{{/authenticated}}
-```
-
-  convert it:
-
-```
-$ qiq < hello.qiq > hello.js
-```
-
-Now you can do:
-
-```js
-  var hello = require('./hello');
-  var str = hello({ name: 'Tom', authenticated: false });
-
-  console.log(str); // => "Hello Tom! <a href="/login">login</a>
-```
 ## API
 
 ### qiq(string, [obj], [opts])
 
   Compile and render the given mustache `string` with optional context `obj`.
 
-### qiq.compile(string)
+### qiq.compile(string, [opts])
 
   Compile the qiq `string` to a stand-alone `Function` accepting a context `obj`.
 
@@ -124,6 +98,8 @@ to follow the template logic, or return a string in which case that is what is p
   };
   qiq(template, list); // => "<ul><li>tobi</li><li>loki</li><li>jane</li></ul>";
 ```
+
+For more examples check the `test/index.js` file in the repo.
 
 ## License
 
