@@ -366,13 +366,7 @@ var qiq2 = (function() {
 
       buf.forEach(function(b) {
         if (b.type === 'r') { // reference
-
-          if (b.tag[0] == '.' && b.tag[1] == '.') { // parent
-            r += 'a(' + _getParentRef(b, parentVar) + ');';
-          } else {
-            r += 'a(' + _getRef(b) + ');';
-          }
-
+          r += 'a(' + _getRef(b) + ');';
         // } else if (block.type === '+' && !b.tag) {
         //   // insert body (invoke content function)
         //   r += 'if(c._$body){a(c._$body());c._$body=null;}';
@@ -404,7 +398,7 @@ var qiq2 = (function() {
             r += 'a(a' + e + ')';
           } else {
             // var it = block.params.it && stripDoubleQuotes(block.params.it);
-			r += 'l.$parent=a' + e + ';';
+			r += 'l.$parent=' + _parent(b.tag) + ';';
             r += 'l.$len=a' + e + '.length;'; // cur array length
             r += 'for(var i' + e + '=0;i' + e + '<a' + e + '.length;i' + e + '++){';
             // if (it) {
@@ -483,20 +477,17 @@ var qiq2 = (function() {
       }
     }
 
-    function _val(tag, utilFn) {
-      utilFn = utilFn || 'u.v';
-
+    function _resolveVal(tag) {
       if (!isNaN(tag)) return tag;
 
       if (tag[0] == "'" || tag[0] == '"') { // looks like a string
-        return '' + utilFn + '(' + tag + ',l._it,l,c)';
+        return [tag];
+        // return '' + utilFn + '(' + tag + ',l._it,l,c)';
       }
 
       // . notation
-      if (tag.trim() === '.') {
-        return 'l._it';
-      } else if (tag[0] === '.') {
-        tag = (tag[1] == '.') ? '_it' + tag.substring(1) : '_it' + tag;
+      if (tag[0] === '.') {
+        tag = '_it' + tag;
       }
 
       var els = [], i, c, sub = false, idx = 0;
@@ -530,6 +521,28 @@ var qiq2 = (function() {
         ret.push(cur);
       });
 
+      return ret;
+    }
+
+    function _parent(tag) {
+      var last = _resolveVal(tag).pop();
+      return last.replace(/\.[^.]+$/, '');
+	  // return parts.pop()
+    }
+
+    function _val(tag, utilFn) {
+      utilFn = utilFn || 'u.v';
+
+      if (tag.trim() === '.')
+        return 'l._it';
+
+      if (tag[0] == '.' && tag[1] == '.') { // parent
+        var obj = 'l.$parent.' + tag.substring(2);
+        return '' + utilFn + '(' + obj + ',l.$parent,l,c)';
+      }
+
+      var ret = _resolveVal(tag);
+
       // use utilFn (u.v by default) to invoke function on last el
       if (ret.length === 1) {
         // return '' + utilFn}(' + ret[0]},null,l)';
@@ -546,17 +559,6 @@ var qiq2 = (function() {
       b.f.forEach(function(f) { o = 'u.f.' + f + '(' + o + ',l,c)' });
       return o;
     }
-
-    function _getParentRef(b, parentVar) {
-      // var o = _val(b.tag, 'u.d');
-      var utilFn = 'u.d';
-      var obj = parentVar + '.' + b.tag.substring(2);
-      var o = '' + utilFn + '(' + obj + ',' + parentVar + ',l,c)';
-      if (!b.f) return o;
-      b.f.forEach(function(f) { o = 'u.f.' + f + '(' + o + ',l,c)' });
-      return o;
-    }
-
 
     compBuf(src);
     return new Function('l', 'u', 'c', 's', r + 'return r;');
