@@ -215,20 +215,10 @@ var qiq2 = (function() {
       // b.params = {};
 
       switch (b.type) {
-        // if
-        case '?':
-          putB(b);
-          stackB(b);
-          break;
 
-        // not
-        case '!':
-          putB(b);
-          stackB(b);
-          break;
-
-        // loop
-        case '#':
+        case '?': // if
+        case '!': // not
+        case '#': // loop
           putB(b);
           stackB(b);
           break;
