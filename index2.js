@@ -404,6 +404,7 @@ var qiq2 = (function() {
             r += 'a(a' + e + ')';
           } else {
             // var it = block.params.it && stripDoubleQuotes(block.params.it);
+			r += 'l.$parent=a' + e + ';';
             r += 'l.$len=a' + e + '.length;'; // cur array length
             r += 'for(var i' + e + '=0;i' + e + '<a' + e + '.length;i' + e + '++){';
             // if (it) {
@@ -459,6 +460,7 @@ var qiq2 = (function() {
         r += 'ctx' + e + '._it=l._it;';
         r += 'ctx' + e + '.idx=l.$idx;';
         r += 'ctx' + e + '.length=l.$len;';
+        r += 'ctx' + e + '.parent=l.$parent;';
       }
 
       r += 'c.ctx.push(ctx' + e + ');';
@@ -477,6 +479,7 @@ var qiq2 = (function() {
         r += 'l._it=p_ctx' + e + '._it;';
         r += 'l.$idx=p_ctx' + e + '.idx;';
         r += 'l.$len=p_ctx' + e + '.length;';
+        r += 'l.$parent=p_ctx' + e + '.parent;';
       }
     }
 

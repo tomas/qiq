@@ -371,6 +371,14 @@ describe('{{bool?}}', function() {
 
 })
 
+describe('objects', function() {
+  var obj =  { prop: true, val: 'hello', arr: [{ number: 1 }, { number: 2 }] };
+
+  it('allows accessing parent element', function() {
+    mm('{{#arr}}number: {{.number}} {{ ..val }}{{/}}', obj).should.equal('number: 1 hello number: 2 hello ');
+  })
+})
+
 describe('deep objects', function() {
 
   var obj =  { nested: { prop: true, val: 'hello', arr: [1,2,3] } };
