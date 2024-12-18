@@ -317,7 +317,7 @@ describe('{{!id}}', function(){
      .should.equal('fails? nope, cool!');
   })
 
-  it('should supported nested ifelses', function(){
+  it('should support nested ifelses', function(){
     var data = { fails: false, hot: true };
     mm('fails? {{fails?}}yep{{_else}}nope, {{!hot}}not cool{{_else}}cool!{{/}}{{/}}', data)
      .should.equal('fails? nope, cool!');
@@ -344,6 +344,14 @@ describe('{{!id}}', function(){
   })
 
 })
+
+// describe('{{ _else @if }}', function() {
+//   it('should work', function(){
+//     var data = { foo: false, bar: true };
+//     mm('{{ foo? }}foo{{ _else @if bar == 123 }}bar!{{ / }}', data)
+//      .should.equal('bar!');
+//   })
+// })
 
 describe('{{bool?}}', function() {
 
