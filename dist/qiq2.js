@@ -215,20 +215,10 @@ var qiq2 = (function() {
       // b.params = {};
 
       switch (b.type) {
-        // if
-        case '?':
-          putB(b);
-          stackB(b);
-          break;
 
-        // not
-        case '!':
-          putB(b);
-          stackB(b);
-          break;
-
-        // loop
-        case '#':
+        case '?': // if
+        case '!': // not
+        case '#': // loop
           putB(b);
           stackB(b);
           break;
@@ -353,7 +343,7 @@ var qiq2 = (function() {
         r = 'var r=\'\',l=l||{},c=c||{ctx:[]};var a=s?function(x){s.write(String(x))}:function(x){r+=x};';
 
     // compile buffer
-    function compBuf(buf) {
+    function compBuf(buf, parentVar) {
       // precompile, for content functions
       // buf.forEach(b => {
       //   if (b.type === '<') {
@@ -365,8 +355,7 @@ var qiq2 = (function() {
       // });
 
       buf.forEach(function(b) {
-        if (b.type === 'r') {
-          // reference
+        if (b.type === 'r') { // reference
           r += 'a(' + _getRef(b) + ');';
         // } else if (block.type === '+' && !b.tag) {
         //   // insert body (invoke content function)
@@ -399,6 +388,7 @@ var qiq2 = (function() {
             r += 'a(a' + e + ')';
           } else {
             // var it = block.params.it && stripDoubleQuotes(block.params.it);
+			r += 'l._up=' + _parent(b.tag) + ';';
             r += 'l.$len=a' + e + '.length;'; // cur array length
             r += 'for(var i' + e + '=0;i' + e + '<a' + e + '.length;i' + e + '++){';
             // if (it) {
@@ -406,7 +396,7 @@ var qiq2 = (function() {
             // }
             r += 'l._it=a' + e + '[i' + e + '];';
             r += 'l.$idx=i' + e + ';'; // cur id
-            compBuf(b.buf, true);
+            compBuf(b.buf, 'a' + e);
             r += '}';
           }
           r += '}';
@@ -425,7 +415,7 @@ var qiq2 = (function() {
           }
           r += '}';
           _else(b);
-        } else if (!b.type){
+        } else if (!b.type) {
           // default: raw text
           r += 'a(\'' + b + '\');';
         }
@@ -452,6 +442,7 @@ var qiq2 = (function() {
       // });
       if (isArray) {
         r += 'ctx' + e + '._it=l._it;';
+        r += 'ctx' + e + '._up=l._up;';
         r += 'ctx' + e + '.idx=l.$idx;';
         r += 'ctx' + e + '.length=l.$len;';
       }
@@ -470,24 +461,22 @@ var qiq2 = (function() {
       // });
       if (isArray) {
         r += 'l._it=p_ctx' + e + '._it;';
+        r += 'l._up=p_ctx' + e + '._up;';
         r += 'l.$idx=p_ctx' + e + '.idx;';
         r += 'l.$len=p_ctx' + e + '.length;';
       }
     }
 
-    function _val(tag, utilFn) {
-      utilFn = utilFn || 'u.v';
-
+    function _resolveVal(tag) {
       if (!isNaN(tag)) return tag;
 
       if (tag[0] == "'" || tag[0] == '"') { // looks like a string
-        return '' + utilFn + '(' + tag + ',l._it,l,c)';
+        return [tag];
+        // return '' + utilFn + '(' + tag + ',l._it,l,c)';
       }
 
       // . notation
-      if (tag.trim() === '.') {
-        return 'l._it';
-      } else if (tag[0] === '.') {
+      if (tag[0] === '.') {
         tag = '_it' + tag;
       }
 
@@ -521,6 +510,28 @@ var qiq2 = (function() {
         }
         ret.push(cur);
       });
+
+      return ret;
+    }
+
+    function _parent(tag) {
+      var last = _resolveVal(tag).pop();
+      return last.replace(/\.[^.]+$/, '');
+	  // return parts.pop()
+    }
+
+    function _val(tag, utilFn) {
+      utilFn = utilFn || 'u.v';
+
+      if (tag.trim() === '.')
+        return 'l._it';
+
+      if (tag[0] == '.' && tag[1] == '.') { // parent
+        var obj = 'l._up.' + tag.substring(2);
+        return '' + utilFn + '(' + obj + ',l._up,l,c)';
+      }
+
+      var ret = _resolveVal(tag);
 
       // use utilFn (u.v by default) to invoke function on last el
       if (ret.length === 1) {
