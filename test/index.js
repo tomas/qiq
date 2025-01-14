@@ -345,6 +345,35 @@ describe('{{!id}}', function() {
 
 })
 
+describe('{{  @if }}', function() {
+  it('should work', function() {
+    var data = { number: 123 };
+    mm('{{ @if number == 123 }}is 123{{ _ }}not 123{{ / }}', data)
+      .should.equal('is 123');
+
+    mm('{{ @if number == "123" }}is 123{{ _ }}not 123{{ / }}', data)
+      .should.equal('not 123');
+  })
+
+  it('works with object properties', function() {
+    var data = {
+      products: [
+        { name: 'one', variants: [{name: 'A'}, {name: 'B'}] },
+        { name: 'two', variants: [{name: 'C'}, {name: 'D', name: 'E'}] }
+      ]
+    }
+
+    mm(`
+      {{ #products }}
+        {{ @if .name == 'one' }}
+          Number one has {{ .variants.length }} variants
+        {{ / }}
+      {{ / }}
+    `, data, { htmltrim: true }).should.equal('Number one has 2 variants');
+  })
+
+})
+
 // describe('{{ _else @if }}', function() {
 //   it('should work', function() {
 //     var data = { foo: false, bar: true };
@@ -433,7 +462,7 @@ describe('deep objects', function() {
     var data = {
       products: [
         { name: 'one', variants: [{name: 'A'}, {name: 'B'}] },
-        { name: 'two', variants: [{name: 'C'}, {name: 'D'}] }
+        { name: 'two', variants: [{name: 'C'}, {name: 'D'}, {name: 'E'}] }
       ]
     }
 
@@ -443,7 +472,7 @@ describe('deep objects', function() {
           {{ ..name }} - {{ .name }}/
         {{ /.variants }}
       {{ /products }}
-    `, data, { htmltrim: true }).should.equal('one - A/one - B/two - C/two - D/');
+    `, data, { htmltrim: true }).should.equal('one - A/one - B/two - C/two - D/two - E/');
   })
 
   xit('forbids rewriting condition', function() {
