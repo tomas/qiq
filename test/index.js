@@ -9,17 +9,22 @@ function mm(template, data, opts) {
 // var mm = require('../dist/qiq.min');
 var should = require('should');
 
-describe('{id}', function() {
+describe('{prop}', function() {
   it('should not work', function() {
     var user = { name: 'tobi' };
     mm('hi {name}.', user).should.equal('hi {name}.');
   })
 })
 
-describe('{{id}}', function() {
+describe('{{prop}}', function() {
   it('should buffer', function() {
     var user = { name: 'tobi' };
     mm('hi {{name}}.', user).should.equal('hi tobi.');
+  })
+
+  it('should work with dots in main scope', function() {
+    var user = { name: 'tobi' };
+    mm('hi {{.name}}.', user).should.equal('hi tobi.');
   })
 
   it('should escape', function() {
@@ -80,7 +85,7 @@ describe('raw filter', function() {
   })
 })
 
-describe('{{#id}}', function() {
+describe('{{#prop}}', function() {
   it('should pass through when truthy', function() {
     var user = { admin: true };
     mm('{{#admin}}yup{{/admin}}', user).should.equal('yup');
@@ -369,7 +374,7 @@ describe('{{  @if }}', function() {
           Number one has {{ .variants.length }} variants
         {{ / }}
       {{ / }}
-    `, data, { htmltrim: true }).should.equal('Number one has 2 variants');
+    `, data, { trim: true }).should.equal('Number one has 2 variants');
   })
 
 })
@@ -472,7 +477,7 @@ describe('deep objects', function() {
           {{ ..name }} - {{ .name }}/
         {{ /.variants }}
       {{ /products }}
-    `, data, { htmltrim: true }).should.equal('one - A/one - B/two - C/two - D/two - E/');
+    `, data, { trim: true }).should.equal('one - A/one - B/two - C/two - D/two - E/');
   })
 
   xit('forbids rewriting condition', function() {
