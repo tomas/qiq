@@ -198,6 +198,7 @@ var qiq2 = (function() {
           b.type = '?';
           b.tag = str.slice(0, -1);
         } else {
+          // handle .prop in main scope
           if (!stack.length && str[0] == '.')
             b.tag = str.slice(1);
 
@@ -216,6 +217,10 @@ var qiq2 = (function() {
       // parse params
       // b.params = parseParams(str);
       // b.params = {};
+
+      // handle #.foo or .foo? in main scope
+      if (!stack.length && b.tag[0] == '.')
+        b.tag = b.tag.slice(1);
 
       switch (b.type) {
 

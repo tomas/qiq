@@ -91,6 +91,11 @@ describe('{{#prop}}', function() {
     mm('{{#admin}}yup{{/admin}}', user).should.equal('yup');
   })
 
+  it('works with dots in main scope', function() {
+    var user = { admin: true };
+    mm('{{#.admin}}yup{{/}}', user).should.equal('yup');
+  })
+
   it('should ignore when falsey', function() {
     var user = { admin: false };
     mm('admin: {{#admin}}yup{{/admin}}', user).should.equal('admin: ');
@@ -99,6 +104,16 @@ describe('{{#prop}}', function() {
   it('should ignore when undefined', function() {
     var user = {};
     mm('admin: {{#admin}}yup{{/admin}}', user).should.equal('admin: ');
+  })
+
+  it('should pass through when truthy', function() {
+    var user = { admin: true };
+    mm('{{admin?}}yup{{/admin?}}', user).should.equal('yup');
+  })
+
+  it('works with dots in main scope', function() {
+    var user = { admin: true };
+    mm('{{#.admin?}}yup{{/}}', user).should.equal('yup');
   })
 
   it('should support nested tags', function() {
@@ -137,6 +152,9 @@ describe('{{#prop}}', function() {
       .should.equal('yes');
 
     mm('{{?bool}}yes{{/}}', obj)
+      .should.equal('yes');
+
+    mm('{{.bool?}}yes{{/}}', obj)
       .should.equal('yes');
 
     mm('{{bool?}}yes{{_else}}no{{/}}', obj)
