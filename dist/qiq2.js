@@ -115,7 +115,7 @@ var qiq2 = (function() {
 
     // add string
     function pushStr(str) {
-      if (opts.htmltrim) {
+      if (opts.trim) {
         // remove line returns and following spaces
         str = str.replace(/[\r\n]+\s*/g , '');
         // escape backslashes
@@ -125,8 +125,7 @@ var qiq2 = (function() {
       // escape single quotes
       str = str.replace(/'/g, '\\\'');
 
-      var i = buf.length - 1,
-          last = buf[i];
+      var i = buf.length - 1, last = buf[i];
 
       // concat with previous string buf
       if (typeof last === 'string') {
@@ -199,10 +198,15 @@ var qiq2 = (function() {
           b.type = '?';
           b.tag = str.slice(0, -1);
         } else {
+          // handle .prop in main scope
+          if (!stack.length && str[0] == '.')
+            b.tag = str.slice(1);
+
           // reference
           b.type = 'r';
           parseF(str, b);
           putB(b);
+
           return true;
         }
       } else {
@@ -213,6 +217,10 @@ var qiq2 = (function() {
       // parse params
       // b.params = parseParams(str);
       // b.params = {};
+
+      // handle #.foo or .foo? in main scope
+      if (!stack.length && b.tag[0] == '.')
+        b.tag = b.tag.slice(1);
 
       switch (b.type) {
 
@@ -277,7 +285,7 @@ var qiq2 = (function() {
     return function() {
 
       // remove spaces at the beginning of lines and line breaks
-      if (opts.htmltrim) {
+      if (opts.trim) {
         src = src.replace(/^\s+/g, '');
       } else {
         src = src.replace(/\r/g , '\\r').replace(/\n/g , '\\n');
