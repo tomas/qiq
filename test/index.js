@@ -380,6 +380,7 @@ describe('{{  @if }}', function() {
 
   it('works with object properties', function() {
     var data = {
+      category: "products",
       products: [
         { name: 'one', variants: [{name: 'A'}, {name: 'B'}] },
         { name: 'two', variants: [{name: 'C'}, {name: 'D', name: 'E'}] }
@@ -389,10 +390,10 @@ describe('{{  @if }}', function() {
     mm(`
       {{ #products }}
         {{ @if .name == 'one' }}
-          Number one has {{ .variants.length }} variants
+          Number one in {{ category }} has {{ .variants.length }} variants
         {{ / }}
       {{ / }}
-    `, data, { trim: true }).should.equal('Number one has 2 variants');
+    `, data, { trim: true }).should.equal('Number one in products has 2 variants');
   })
 
 })
@@ -441,7 +442,7 @@ describe('objects', function() {
 
 describe('deep objects', function() {
 
-  var obj =  { nested: { prop: true, val: 'hello', arr: [1,2,3] } };
+  var obj =  { foo: 'foo', nested: { prop: true, val: 'hello', arr: [1,2,3] } };
 
   it('allows outputting values', function() {
     mm('{{nested.val}}', obj).should.equal('hello');
