@@ -210,7 +210,10 @@ var qiq2 = (function() {
           return true;
         }
       } else {
-        // remove first char
+        if (b.type != '/' && b.type != '!' && str.slice(-1) == '?')
+          console.warn('Redundant ? found at end of tag ' + str)
+
+        // remove first char and ? symbols at the end
         b.tag = str.substring(1).split(/ |\?/)[0]
       }
 
@@ -396,7 +399,7 @@ var qiq2 = (function() {
             r += 'a(a' + e + ')';
           } else {
             // var it = block.params.it && stripDoubleQuotes(block.params.it);
-			r += 'l._up=' + _parent(b.tag) + ';';
+            r += 'l._up=' + _parent(b.tag) + ';';
             r += 'l.$len=a' + e + '.length;'; // cur array length
             r += 'for(var i' + e + '=0;i' + e + '<a' + e + '.length;i' + e + '++){';
             // if (it) {

@@ -515,7 +515,46 @@ describe('deep objects', function() {
     err.message.should.equal('cannot overwrite existing conditional for "links"')
   })
 
+  it('nesting within arrays', function() {
+
+    var data = {
+      menu: {
+        name: 'asd',
+        has_submenus: true,
+        links: [
+          { url: '/1', name: '1', submenu: { name: 'Foo', links: [{ name: '1.1' }] } },
+          { url: '/2', name: '2' }
+        ]
+      }
+    }
+
+    mm(`
+<% menu? %>
+  <% menu.has_submenus? %>
+    <ul class="with-submenu">
+    <% #menu.links %>
+      <li>
+        <a href="<% .url %>"><% .name %></a>
+        <% .submenu? %>
+          <ul class="submenu">
+          <% #.submenu.links? %>
+            <li>
+              <a href="<% .url %>"><% .name %></a>
+            </li>
+          <% / %>
+          </ul>
+        <% / %>
+      </li>
+    <% / %>
+    </ul>
+  <% / %>
+<% / %>
+    `, data, { trim: true, delimiters: ['<%', '%>'] }).should.equal('<ul class="with-submenu"><li><a href="/1">1</a><ul class="submenu"><li><a href="">1.1</a></li></ul></li><li><a href="/2">2</a></li></ul>')
+
+  })
+
 })
+
 
 describe('helper/filter functions', function() {
 
