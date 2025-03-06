@@ -597,4 +597,59 @@ describe('helper/filter functions', function() {
     mm('{{#users}}{{ upcase }}{{/users}}', data).should.equal('ONE123TWO123THREE123');
   })
 
+  it('more complex example', function() {
+    var data = {
+      product: {
+        name: 'Some name',
+        price: 1000,
+        func: function(product, data) {
+          return !product ? 'OK' : 'NOK'
+          // return product.name;
+        },
+        variants: [
+          { name: '1', options: [{ name: '1.1' }, { name: '1.2'}] },
+          { name: '2', options: [{ name: '2.1' }, { name: '2.2'}] }
+        ]
+      },
+      helpers: {
+        globalHelper: function(helpers, data) {
+          // return Object.keys(helpers).length;
+          return !helpers ? 'OK' : 'NOK'; // obj should be nil
+        },
+        renderName: function(product, data) {
+          return 1
+        },
+        formatPrice: function(number, data) {
+          var decimals = 0;
+          var separator = '.';
+          return '$' + number.toFixed(0).replace(/(\d)(?=(\d{3})+(?:\.\d+)?$)/g, "$1" + separator)
+        },
+        countVariants: function(main, data) {
+          return 1
+        },
+        renderVariant: function(variant, data) {
+          return variant.name.toUpperCase() + variant.options.length
+        }
+      }
+    }
+
+    mm(`
+    <% helpers.globalHelper | raw %>
+    <% product.func %>
+    <% #product %>
+      <% helpers.renderName | raw %>
+    <% / %>
+    <% #product.price %>
+      <% helpers.formatPrice | raw %>
+    <% / %>
+    <% product.variants? %>
+      num variants: <% helpers.countVariants | raw %>
+    <% / %>
+    <% #product.variants %>
+      variant <% $idx %>: <% helpers.renderVariant | raw %>
+    <% / %>
+    `, data, { trim: true, delimiters: ['<%', '%>'] }).should.equal('OKOK1$1.000num variants: 1variant 0: 12variant 1: 22');
+
+  })
+
 })
