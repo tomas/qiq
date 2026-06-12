@@ -117,7 +117,7 @@ var qiq2 = (function() {
     function pushStr(str) {
       if (opts.trim) {
         // remove line returns and following spaces
-        str = str.replace(/[\r\n]+\s*/g , '');
+        str = str.replace(/[\r\n]+\s*/g , ' ')
         // escape backslashes
         str = str.replace(/\\/g, '\\\\');
       }
@@ -286,10 +286,9 @@ var qiq2 = (function() {
     }
 
     return function() {
-
       // remove spaces at the beginning of lines and line breaks
       if (opts.trim) {
-        src = src.replace(/^\s+/g, '');
+        src = src.replace(/^\s+/g, ' ').trim();
       } else {
         src = src.replace(/\r/g , '\\r').replace(/\n/g , '\\n');
       }

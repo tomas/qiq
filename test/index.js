@@ -393,7 +393,7 @@ describe('{{  @if }}', function() {
           Number one in {{ category }} has {{ .variants.length }} variants
         {{ / }}
       {{ / }}
-    `, data, { trim: true }).should.equal('Number one in products has 2 variants');
+    `, data, { trim: true }).should.equal('  Number one in products has 2 variants    ');
   })
 
 })
@@ -496,7 +496,7 @@ describe('deep objects', function() {
           {{ ..name }} - {{ .name }}/
         {{ /.variants }}
       {{ /products }}
-    `, data, { trim: true }).should.equal('one - A/one - B/two - C/two - D/two - E/');
+    `, data, { trim: true }).should.equal('  one - A/  one - B/    two - C/  two - D/  two - E/  ');
   })
 
   xit('forbids rewriting condition', function() {
@@ -549,7 +549,7 @@ describe('deep objects', function() {
     </ul>
   <% / %>
 <% / %>
-    `, data, { trim: true, delimiters: ['<%', '%>'] }).should.equal('<ul class="with-submenu"><li><a href="/1">1</a><ul class="submenu"><li><a href="">1.1</a></li></ul></li><li><a href="/2">2</a></li></ul>')
+    `, data, { trim: true, delimiters: ['<%', '%>'] }).should.equal('  <ul class="with-submenu">  <li> <a href="/1">1</a>  <ul class="submenu">  <li> <a href="">1.1</a> </li>  </ul>  </li>  <li> <a href="/2">2</a>  </li>  </ul>  ')
 
   })
 
@@ -648,7 +648,7 @@ describe('helper/filter functions', function() {
     <% #product.variants %>
       variant <% $idx %>: <% helpers.renderVariant | raw %>
     <% / %>
-    `, data, { trim: true, delimiters: ['<%', '%>'] }).should.equal('OKOK1$1.000num variants: 1variant 0: 12variant 1: 22');
+    `, data, { trim: true, delimiters: ['<%', '%>'] }).should.equal('OK OK  1   $1.000   num variants: 1   variant 0: 12  variant 1: 22 ');
 
   })
 
